@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AI CPU Scheduler — Interactive Tester</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:#0a0e1a;
+  --surface:#111827;
+  --surface2:#1a2235;
+  --border:#1e2d47;
+  --accent:#3b82f6;
+  --accent2:#22d3ee;
+  --cpu:#f59e0b;
+  --io:#10b981;
+  --text:#e2e8f0;
+  --muted:#64748b;
+  --danger:#ef4444;
+  --mono:'Space Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+}
+
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+
+/* background grid */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--border) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:40px 40px;opacity:.3;pointer-events:none;z-index:0
+}
+
+.wrap{position:relative;z-index:1;max-width:1300px;margin:0 auto;padding:24px}
+
+/* ── Header ── */
+header{display:flex;align-items:center;gap:16px;margin-bottom:36px}
+.logo{width:42px;height:42px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+      border-radius:10px;display:grid;place-items:center;font-family:var(--mono);font-size:18px;font-weight:700}
+header h1{font-family:var(--mono);font-size:1.4rem;font-weight:700;
+          background:linear-gradient(90deg,#e2e8f0,#94a3b8);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+header p{font-size:.8rem;color:var(--muted);margin-top:2px}
+
+/* ── Layout ── */
+.layout{display:grid;grid-template-columns:380px 1fr;gap:20px;align-items:start}
+
+/* ── Panel ── */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--border);
+            display:flex;align-items:center;gap:8px}
+.panel-head .dot{width:8px;height:8px;border-radius:50%}
+.panel-head h2{font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.panel-body{padding:18px}
+
+/* ── Form ── */
+.field{margin-bottom:14px}
+label{display:block;font-size:.75rem;font-weight:600;color:var(--muted);
+      text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+input,select{
+  width:100%;background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:9px 12px;color:var(--text);
+  font-family:var(--mono);font-size:.82rem;outline:none;
+  transition:border-color .2s
+}
+input:focus,select:focus{border-color:var(--accent)}
+input[type=range]{padding:6px 0;background:transparent;border:none;cursor:pointer}
+.range-row{display:flex;align-items:center;gap:10px}
+.range-val{font-family:var(--mono);font-size:.82rem;color:var(--accent);min-width:36px;text-align:right}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* type badge */
+.type-badge{
+  display:inline-flex;align-items:center;gap:6px;padding:3px 10px;
+  border-radius:20px;font-size:.7rem;font-weight:700;font-family:var(--mono)
+}
+.type-cpu{background:rgba(245,158,11,.15);color:var(--cpu);border:1px solid rgba(245,158,11,.3)}
+.type-io {background:rgba(16,185,129,.15);color:var(--io); border:1px solid rgba(16,185,129,.3)}
+
+/* ── Buttons ── */
+.btn{
+  width:100%;padding:11px;border-radius:9px;border:none;cursor:pointer;
+  font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:.04em;
+  transition:all .2s
+}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0e1a}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(59,130,246,.4)}
+.btn-secondary{background:var(--surface2);color:var(--muted);border:1px solid var(--border);margin-top:8px}
+.btn-secondary:hover{border-color:var(--accent);color:var(--text)}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid rgba(239,68,68,.25);margin-top:8px}
+.btn-danger:hover{background:rgba(239,68,68,.2)}
+
+/* ── Process Queue ── */
+.pq-wrap{max-height:200px;overflow-y:auto;margin-bottom:14px}
+.pq-wrap::-webkit-scrollbar{width:4px}
+.pq-wrap::-webkit-scrollbar-track{background:transparent}
+.pq-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.proc-item{
+  display:flex;align-items:center;gap:8px;padding:7px 10px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;margin-bottom:6px;font-family:var(--mono);font-size:.72rem;
+  animation:slideIn .25s ease
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:none}}
+.proc-item .pid{color:var(--accent);font-weight:700;min-width:28px}
+.proc-item .info{color:var(--muted);flex:1}
+.proc-item .rm{background:none;border:none;color:var(--muted);cursor:pointer;
+               font-size:14px;padding:0 4px;line-height:1;transition:color .15s}
+.proc-item .rm:hover{color:var(--danger)}
+
+/* ── Results ── */
+.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.sched-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;transition:border-color .3s
+}
+.sched-card.winner{border-color:var(--accent)}
+.sched-card-head{
+  padding:11px 14px;display:flex;align-items:center;justify-content:space-between
+}
+.sched-name{font-family:var(--mono);font-size:.75rem;font-weight:700;text-transform:uppercase}
+.sched-card-body{padding:12px 14px}
+
+.metric-row{display:flex;justify-content:space-between;align-items:center;
+            padding:5px 0;border-bottom:1px solid var(--border)}
+.metric-row:last-child{border-bottom:none}
+.metric-label{font-size:.72rem;color:var(--muted)}
+.metric-val{font-family:var(--mono);font-size:.78rem;font-weight:700}
+.metric-val.best{color:var(--io)}
+.metric-val.worst{color:var(--danger)}
+
+.winner-badge{
+  font-family:var(--mono);font-size:.6rem;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#0a0e1a;padding:2px 8px;border-radius:20px
+}
+
+/* ── Bar Chart ── */
+.chart-section{margin-top:4px}
+.chart-title{font-family:var(--mono);font-size:.72rem;color:var(--muted);
+             text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.bar-group{margin-bottom:12px}
+.bar-label{font-size:.72rem;color:var(--muted);margin-bottom:5px;display:flex;justify-content:space-between}
+.bar-track{height:22px;background:var(--surface2);border-radius:6px;overflow:hidden;
+           display:flex;gap:2px;align-items:center}
+.bar-fill{height:100%;border-radius:4px;transition:width .8s cubic-bezier(.23,1,.32,1);
+          display:flex;align-items:center;padding-left:7px;
+          font-family:var(--mono);font-size:.65rem;font-weight:700;color:#0a0e1a;
+          min-width:0;white-space:nowrap;overflow:hidden}
+
+/* ── Process Table ── */
+.tbl-wrap{overflow-x:auto;margin-top:20px}
+table{width:100%;border-collapse:collapse;font-size:.72rem}
+th{font-family:var(--mono);font-size:.65rem;color:var(--muted);text-transform:uppercase;
+   letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--border);text-align:left}
+td{padding:7px 10px;border-bottom:1px solid rgba(30,45,71,.5);font-family:var(--mono)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(59,130,246,.04)}
+
+/* ── Gantt ── */
+.gantt-wrap{margin-top:20px;overflow-x:auto}
+.gantt-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;min-width:600px}
+.gantt-label{font-family:var(--mono);font-size:.65rem;color:var(--muted);
+             width:90px;flex-shrink:0;text-align:right}
+.gantt-track{flex:1;height:20px;background:var(--surface2);border-radius:4px;
+             position:relative;overflow:hidden}
+.gantt-block{
+  position:absolute;height:100%;border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:.55rem;font-weight:700;color:#0a0e1a;
+  transition:all .5s;overflow:hidden;white-space:nowrap
+}
+
+/* ── Empty State ── */
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty .icon{font-size:2.5rem;margin-bottom:12px;opacity:.4}
+.empty p{font-size:.82rem}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--surface2);
+      padding:4px;border-radius:10px;width:fit-content}
+.tab{padding:6px 14px;border-radius:7px;font-family:var(--mono);font-size:.72rem;
+     font-weight:700;text-transform:uppercase;cursor:pointer;border:none;
+     background:transparent;color:var(--muted);transition:all .2s}
+.tab.active{background:var(--accent);color:#0a0e1a}
+
+/* ── Glow ── */
+.glow-blue{box-shadow:0 0 20px rgba(59,130,246,.15)}
+.animate-in{animation:fadeUp .4s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+.info-tip{font-size:.7rem;color:var(--muted);margin-top:4px;font-style:italic}
+.divider{height:1px;background:var(--border);margin:14px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">⚡</div>
+    <div>
+      <h1>AI CPU Scheduler — Interactive Tester</h1>
+      <p>Compare FCFS · Round Robin · AI Scheduler in real-time</p>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ── LEFT: Input Panel ── -->
+    <div>
+      <div class="panel glow-blue">
+        <div class="panel-head">
+          <div class="dot" style="background:#3b82f6"></div>
+          <h2>Add Process</h2>
+        </div>
+        <div class="panel-body">
+
+          <div class="two-col">
+            <div class="field">
+              <label>Process Type</label>
+              <select title="process type" id="ptype" onchange="updateTypeHint()">
+                <option value="CPU-bound">CPU-bound</option>
+                <option value="IO-bound">IO-bound</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Arrival Time (ms)</label>
+              <input title="arrival time" type="number" id="arrival" value="0" min="0" step="1"/>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>CPU Burst Time (ms) <span id="burst-hint" style="color:var(--cpu)">40–100 for CPU-bound</span></label>
+            <div class="range-row">
+              <input title="CPU burst time" type="range" id="cpu_burst" min="1" max="120" value="70"
+                     oninput="document.getElementById('burst-val').textContent=this.value"/>
+              <span class="range-val" id="burst-val">70</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>I/O Burst Time (ms)</label>
+            <div class="range-row">
+              <input title="I/O burst time" type="range" id="io_burst" min="1" max="100" value="8"
+                     oninput="document.getElementById('io-val').textContent=this.value"/>
+              <span class="range-val" id="io-val">8</span>
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label>I/O Frequency</label>
+              <div class="range-row">
+                <input title="I/O frequency" type="range" id="io_freq" min="0" max="1" step="0.05" value="0.15"
+                       oninput="document.getElementById('freq-val').textContent=parseFloat(this.value).toFixed(2)"/>
+                <span class="range-val" id="freq-val">0.15</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>Priority (1–10)</label>
+              <div class="range-row">
+                <input title="priority" type="range" id="priority" min="1" max="10" value="3"
+                       oninput="document.getElementById('pri-val').textContent=this.value"/>
+                <span class="range-val" id="pri-val">3</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Execution Cycles</label>
+            <div class="range-row">
+              <input title="execution cycles" type="range" id="exec_cycles" min="50" max="2000" step="50" value="1000"
+                     oninput="document.getElementById('cyc-val').textContent=this.value"/>
+              <span class="range-val" id="cyc-val">1000</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="addProcess()">＋ Add Process</button>
+          <button class="btn btn-secondary" onclick="loadPreset('mixed')">Load Mixed Preset (10)</button>
+          <button class="btn btn-secondary" onclick="loadPreset('io_heavy')">Load IO-Heavy Preset (10)</button>
+          <button class="btn btn-danger" onclick="clearAll()">✕ Clear All</button>
+        </div>
+      </div>
+
+      <!-- RR quantum setting -->
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-head">
+          <div class="dot" style="background:#f59e0b"></div>
+          <h2>Scheduler Settings</h2>
+        </div>
+        <div class="panel-body">
+          <div class="field">
+            <label>Round Robin Quantum (ms)</label>
+            <div class="range-row">
+              <input title="round-robin quantum" type="range" id="rr_quantum" min="1" max="50" value="10"
+                     oninput="document.getElementById('q-val').textContent=this.value"/>
+              <span class="range-val" id="q-val">10</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>AI: CPU-bound Quantum (ms)</label>
+            <div class="range-row">
+              <input title="AI: CPU-bound quantum" type="range" id="ai_cpu_q" min="5" max="60" value="20"
+                     oninput="document.getElementById('aicpu-val').textContent=this.value"/>
+              <span class="range-val" id="aicpu-val">20</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>AI: IO-bound Quantum (ms)</label>
+            <div class="range-row">
+              <input title="AI: IO-bound quantum" type="range" id="ai_io_q" min="1" max="20" value="5"
+                     oninput="document.getElementById('aiio-val').textContent=this.value"/>
+              <span class="range-val" id="aiio-val">5</span>
+            </div>
+          </div>
+          <p class="info-tip">AI gives IO-bound processes higher priority + smaller quantum to minimize response time.</p>
+        </div>
+      </div>
+
+      <!-- Queue -->
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-head">
+          <div class="dot" style="background:#22d3ee"></div>
+          <h2>Process Queue (<span id="q-count">0</span>)</h2>
+        </div>
+        <div class="panel-body">
+          <div class="pq-wrap" id="proc-list">
+            <div class="empty"><div class="icon">📭</div><p>No processes yet.<br/>Add some above.</p></div>
+          </div>
+          <button class="btn btn-primary" onclick="runAll()" id="run-btn" disabled>▶ Run All Schedulers</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RIGHT: Results Panel ── -->
+    <div id="results-panel">
+      <div class="panel">
+        <div class="panel-body">
+          <div class="empty" id="empty-results">
+            <div class="icon">🖥️</div>
+            <p>Add processes and click <strong>Run All Schedulers</strong><br/>to see the comparison.</p>
+          </div>
+          <div id="results-content" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let processes = [];
+let pidCounter = 1;
+
+function updateTypeHint() {
+  const t = document.getElementById('ptype').value;
+  const hint = document.getElementById('burst-hint');
+  if (t === 'CPU-bound') {
+    hint.textContent = '40–100 for CPU-bound';
+    hint.style.color = 'var(--cpu)';
+    document.getElementById('cpu_burst').value = 70;
+    document.getElementById('burst-val').textContent = 70;
+    document.getElementById('io_burst').value = 8;
+    document.getElementById('io-val').textContent = 8;
+    document.getElementById('io_freq').value = 0.15;
+    document.getElementById('freq-val').textContent = '0.15';
+    document.getElementById('priority').value = 3;
+    document.getElementById('pri-val').textContent = 3;
+    document.getElementById('exec_cycles').value = 1000;
+    document.getElementById('cyc-val').textContent = 1000;
+  } else {
+    hint.textContent = '2–25 for IO-bound';
+    hint.style.color = 'var(--io)';
+    document.getElementById('cpu_burst').value = 12;
+    document.getElementById('burst-val').textContent = 12;
+    document.getElementById('io_burst').value = 60;
+    document.getElementById('io-val').textContent = 60;
+    document.getElementById('io_freq').value = 0.75;
+    document.getElementById('freq-val').textContent = '0.75';
+    document.getElementById('priority').value = 7;
+    document.getElementById('pri-val').textContent = 7;
+    document.getElementById('exec_cycles').value = 200;
+    document.getElementById('cyc-val').textContent = 200;
+  }
+}
+
+function addProcess() {
+  const ptype       = document.getElementById('ptype').value;
+  const arrival     = parseFloat(document.getElementById('arrival').value) || 0;
+  const cpu_burst   = parseFloat(document.getElementById('cpu_burst').value);
+  const io_burst    = parseFloat(document.getElementById('io_burst').value);
+  const io_freq     = parseFloat(document.getElementById('io_freq').value);
+  const priority    = parseInt(document.getElementById('priority').value);
+  const exec_cycles = parseInt(document.getElementById('exec_cycles').value);
+  const cpu_io_ratio = parseFloat((cpu_burst / (io_burst + 0.001)).toFixed(4));
+
+  const p = { process_id: pidCounter++, process_type: ptype, arrival_time: arrival,
+              cpu_burst_time: cpu_burst, io_burst_time: io_burst, io_frequency: io_freq,
+              priority, execution_cycles: exec_cycles, cpu_io_ratio };
+  processes.push(p);
+  renderQueue();
+
+  // increment arrival for next
+  document.getElementById('arrival').value = Math.round(arrival + Math.random()*5);
+}
+
+function removeProcess(id) {
+  processes = processes.filter(p => p.process_id !== id);
+  renderQueue();
+}
+
+function clearAll() {
+  processes = []; pidCounter = 1;
+  renderQueue();
+  document.getElementById('empty-results').style.display = '';
+  document.getElementById('results-content').style.display = 'none';
+}
+
+function renderQueue() {
+  const list = document.getElementById('proc-list');
+  document.getElementById('q-count').textContent = processes.length;
+  document.getElementById('run-btn').disabled = processes.length === 0;
+  if (processes.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="icon">📭</div><p>No processes yet.</p></div>';
+    return;
+  }
+  list.innerHTML = processes.map(p => `
+    <div class="proc-item">
+      <span class="pid">P${p.process_id}</span>
+      <span class="type-badge ${p.process_type==='CPU-bound'?'type-cpu':'type-io'}">${p.process_type}</span>
+      <span class="info">arr:${p.arrival_time} cpu:${p.cpu_burst_time}ms io:${p.io_burst_time}ms pri:${p.priority}</span>
+      <button class="rm" onclick="removeProcess(${p.process_id})">×</button>
+    </div>`).join('');
+}
+
+function loadPreset(type) {
+  clearAll();
+  const presets = {
+    mixed: [
+      {t:'CPU-bound',a:0, cb:85,ib:5, f:0.10,pr:2,ec:1500},
+      {t:'IO-bound', a:2, cb:10,ib:70,f:0.80,pr:8,ec:150},
+      {t:'CPU-bound',a:3, cb:70,ib:8, f:0.12,pr:3,ec:1200},
+      {t:'IO-bound', a:5, cb:8, ib:55,f:0.75,pr:9,ec:100},
+      {t:'CPU-bound',a:7, cb:95,ib:4, f:0.05,pr:1,ec:1800},
+      {t:'IO-bound', a:8, cb:15,ib:80,f:0.85,pr:7,ec:200},
+      {t:'CPU-bound',a:10,cb:60,ib:10,f:0.15,pr:4,ec:1100},
+      {t:'IO-bound', a:12,cb:5, ib:90,f:0.90,pr:9,ec:80 },
+      {t:'CPU-bound',a:14,cb:75,ib:6, f:0.08,pr:2,ec:1400},
+      {t:'IO-bound', a:15,cb:12,ib:65,f:0.70,pr:8,ec:180},
+    ],
+    io_heavy: [
+      {t:'IO-bound', a:0, cb:8, ib:75,f:0.85,pr:9,ec:100},
+      {t:'IO-bound', a:1, cb:6, ib:80,f:0.90,pr:8,ec:90 },
+      {t:'CPU-bound',a:2, cb:90,ib:5, f:0.05,pr:1,ec:1700},
+      {t:'IO-bound', a:3, cb:10,ib:60,f:0.75,pr:9,ec:120},
+      {t:'IO-bound', a:4, cb:7, ib:85,f:0.88,pr:8,ec:95 },
+      {t:'CPU-bound',a:5, cb:80,ib:7, f:0.08,pr:2,ec:1500},
+      {t:'IO-bound', a:6, cb:9, ib:70,f:0.80,pr:9,ec:110},
+      {t:'IO-bound', a:7, cb:5, ib:90,f:0.92,pr:9,ec:80 },
+      {t:'IO-bound', a:8, cb:11,ib:65,f:0.78,pr:8,ec:130},
+      {t:'CPU-bound',a:9, cb:75,ib:6, f:0.07,pr:3,ec:1300},
+    ]
+  };
+  presets[type].forEach(d => {
+    const cpu_io_ratio = parseFloat((d.cb / (d.ib + 0.001)).toFixed(4));
+    processes.push({
+      process_id: pidCounter++, process_type: d.t, arrival_time: d.a,
+      cpu_burst_time: d.cb, io_burst_time: d.ib, io_frequency: d.f,
+      priority: d.pr, execution_cycles: d.ec, cpu_io_ratio
+    });
+  });
+  renderQueue();
+}
+
+// ════════════════════════════════════════════════════════
+// SCHEDULERS
+// ════════════════════════════════════════════════════════
+
+function runFCFS(procs) {
+  const queue = [...procs].sort((a,b) => a.arrival_time - b.arrival_time);
+  let t = 0, results = [];
+  for (const p of queue) {
+    if (t < p.arrival_time) t = p.arrival_time;
+    const start = t, finish = t + p.cpu_burst_time;
+    results.push({
+      process_id: p.process_id, process_type: p.process_type,
+      arrival_time: p.arrival_time, cpu_burst_time: p.cpu_burst_time,
+      waiting_time: +(start - p.arrival_time).toFixed(2),
+      turnaround_time: +(finish - p.arrival_time).toFixed(2),
+      response_time: +(start - p.arrival_time).toFixed(2),
+      finish_time: finish, start_time: start
+    });
+    t = finish;
+  }
+  const totalBurst = procs.reduce((s,p) => s + p.cpu_burst_time, 0);
+  return { results, cpu_util: +((totalBurst / t) * 100).toFixed(2) };
+}
+
+function runRR(procs, quantum) {
+  const sorted = [...procs].sort((a,b) => a.arrival_time - b.arrival_time)
+    .map(p => ({...p, remaining: p.cpu_burst_time, firstRun: null}));
+  let t = sorted[0].arrival_time, done = [], queue = [], i = 0;
+  const enqueue = () => { while(i < sorted.length && sorted[i].arrival_time <= t) { queue.push(sorted[i]); i++; } };
+  enqueue();
+  while (queue.length) {
+    const p = queue.shift();
+    if (p.firstRun === null) p.firstRun = t;
+    const run = Math.min(quantum, p.remaining);
+    t += run; p.remaining -= run;
+    enqueue();
+    if (p.remaining > 0) { queue.push(p); }
+    else {
+      done.push({
+        process_id: p.process_id, process_type: p.process_type,
+        arrival_time: p.arrival_time, cpu_burst_time: p.cpu_burst_time,
+        waiting_time: +Math.max(0, t - p.arrival_time - p.cpu_burst_time).toFixed(2),
+        turnaround_time: +(t - p.arrival_time).toFixed(2),
+        response_time: +Math.max(0, p.firstRun - p.arrival_time).toFixed(2),
+        finish_time: t
+      });
+    }
+    if (!queue.length && i < sorted.length) { t = sorted[i].arrival_time; enqueue(); }
+  }
+  const totalBurst = procs.reduce((s,p) => s + p.cpu_burst_time, 0);
+  return { results: done, cpu_util: +((totalBurst / t) * 100).toFixed(2) };
+}
+
+function aiClassify(p) {
+  // Mirrors the trained model's decision logic
+  if (p.cpu_io_ratio > 2.0 || (p.cpu_burst_time > 30 && p.io_frequency < 0.4)) return 'CPU-bound';
+  if (p.io_frequency > 0.5 || p.io_burst_time > p.cpu_burst_time * 1.5) return 'IO-bound';
+  return p.cpu_burst_time > 35 ? 'CPU-bound' : 'IO-bound';
+}
+
+function runAI(procs, cpuQ, ioQ) {
+  const enriched = [...procs].sort((a,b) => a.arrival_time - b.arrival_time).map(p => ({
+    ...p,
+    predicted: aiClassify(p),
+    quantum: aiClassify(p) === 'CPU-bound' ? cpuQ : ioQ,
+    dynPri: aiClassify(p) === 'CPU-bound' ? 1 : 10,
+    remaining: p.cpu_burst_time, firstRun: null
+  }));
+  let t = enriched[0].arrival_time, done = [], queue = [], i = 0;
+  const enqueue = () => {
+    while (i < enriched.length && enriched[i].arrival_time <= t) { queue.push(enriched[i]); i++; }
+    queue.sort((a,b) => b.dynPri - a.dynPri || a.arrival_time - b.arrival_time);
+  };
+  enqueue();
+  while (queue.length || i < enriched.length) {
+    if (!queue.length) { t = enriched[i].arrival_time; enqueue(); }
+    const p = queue.shift();
+    if (p.firstRun === null) p.firstRun = t;
+    const run = Math.min(p.quantum, p.remaining);
+    t += run; p.remaining -= run;
+    enqueue();
+    if (p.remaining > 0) { queue.push(p); queue.sort((a,b) => b.dynPri - a.dynPri || a.arrival_time - b.arrival_time); }
+    else {
+      done.push({
+        process_id: p.process_id, process_type: p.process_type,
+        predicted_type: p.predicted,
+        arrival_time: p.arrival_time, cpu_burst_time: p.cpu_burst_time,
+        quantum_used: p.quantum,
+        waiting_time: +Math.max(0, t - p.arrival_time - p.cpu_burst_time).toFixed(2),
+        turnaround_time: +(t - p.arrival_time).toFixed(2),
+        response_time: +Math.max(0, p.firstRun - p.arrival_time).toFixed(2),
+        finish_time: t
+      });
+    }
+  }
+  const totalBurst = procs.reduce((s,p) => s + p.cpu_burst_time, 0);
+  return { results: done, cpu_util: +((totalBurst / t) * 100).toFixed(2) };
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER RESULTS
+// ════════════════════════════════════════════════════════
+
+function avg(arr, key) { return arr.reduce((s,r) => s + r[key], 0) / arr.length; }
+
+function runAll() {
+  if (!processes.length) return;
+  const quantum  = parseInt(document.getElementById('rr_quantum').value);
+  const aiCpuQ   = parseInt(document.getElementById('ai_cpu_q').value);
+  const aiIoQ    = parseInt(document.getElementById('ai_io_q').value);
+
+  const fcfs = runFCFS(processes);
+  const rr   = runRR(processes, quantum);
+  const ai   = runAI(processes, aiCpuQ, aiIoQ);
+
+  const scheds = [
+    { name:'FCFS',         color:'#ef4444', data: fcfs },
+    { name:'Round Robin',  color:'#f59e0b', data: rr   },
+    { name:'AI Scheduler', color:'#3b82f6', data: ai   },
+  ];
+
+  const metrics = ['waiting_time','turnaround_time','response_time'];
+  const mLabels = {'waiting_time':'Avg Waiting','turnaround_time':'Avg Turnaround','response_time':'Avg Response'};
+
+  // find best per metric
+  const best = {};
+  metrics.forEach(m => {
+    const vals = scheds.map(s => avg(s.data.results, m));
+    best[m] = Math.min(...vals);
+  });
+
+  // winner = lowest sum of all 3 metrics
+  const scores = scheds.map(s => metrics.reduce((sum,m) => sum + avg(s.data.results, m), 0));
+  const winnerIdx = scores.indexOf(Math.min(...scores));
+
+  // build HTML
+  let html = `<div class="animate-in">`;
+
+  // ── Summary Cards ──
+  html += `<div class="results-grid">`;
+  scheds.forEach((s, idx) => {
+    const isWinner = idx === winnerIdx;
+    const wt = avg(s.data.results,'waiting_time').toFixed(2);
+    const tt = avg(s.data.results,'turnaround_time').toFixed(2);
+    const rt = avg(s.data.results,'response_time').toFixed(2);
+    const bestWt = parseFloat(wt) === parseFloat(best['waiting_time'].toFixed(2));
+    const bestTt = parseFloat(tt) === parseFloat(best['turnaround_time'].toFixed(2));
+    const bestRt = parseFloat(rt) === parseFloat(best['response_time'].toFixed(2));
+
+    html += `
+    <div class="sched-card ${isWinner?'winner':''}">
+      <div class="sched-card-head">
+        <span class="sched-name" style="color:${s.color}">${s.name}</span>
+        ${isWinner ? '<span class="winner-badge">★ BEST</span>' : ''}
+      </div>
+      <div class="sched-card-body">
+        <div class="metric-row">
+          <span class="metric-label">Avg Waiting</span>
+          <span class="metric-val ${bestWt?'best':''}">${wt} ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Avg Turnaround</span>
+          <span class="metric-val ${bestTt?'best':''}">${tt} ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Avg Response</span>
+          <span class="metric-val ${bestRt?'best':''}">${rt} ms</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">CPU Util</span>
+          <span class="metric-val">${s.data.cpu_util}%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Processes</span>
+          <span class="metric-val">${s.data.results.length}</span>
+        </div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // ── Bar Charts ──
+  html += `<div class="chart-section">`;
+  metrics.forEach(m => {
+    const vals = scheds.map(s => avg(s.data.results, m));
+    const maxV = Math.max(...vals);
+    html += `<div class="bar-group">
+      <div class="bar-label"><span>${mLabels[m]}</span></div>
+      <div class="bar-track">`;
+    scheds.forEach((s, i) => {
+      const pct = maxV > 0 ? (vals[i] / maxV) * 100 : 0;
+      html += `<div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${s.color};flex:${pct/100}">
+        ${vals[i].toFixed(1)}ms
+      </div>`;
+    });
+    html += `</div>
+      <div style="display:flex;gap:16px;margin-top:4px">
+        ${scheds.map((s,i) => `<span style="font-size:.65rem;color:${s.color};font-family:var(--mono)">■ ${s.name}</span>`).join('')}
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // ── Tabs for per-process table ──
+  html += `
+  <div class="divider"></div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('fcfs-tbl','tab-fcfs',this)">FCFS</button>
+    <button class="tab" onclick="showTab('rr-tbl','tab-rr',this)">Round Robin</button>
+    <button class="tab" onclick="showTab('ai-tbl','tab-ai',this)">AI Scheduler</button>
+  </div>`;
+
+  // ── Tables ──
+  const renderTable = (results, showPredicted) => {
+    let t = `<div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>PID</th><th>Type</th>${showPredicted?'<th>Predicted</th>':''}
+        <th>Arrival</th><th>CPU Burst</th>${showPredicted?'<th>Quantum</th>':''}
+        <th>Waiting</th><th>Turnaround</th><th>Response</th><th>Finish</th>
+      </tr></thead><tbody>`;
+    results.forEach(r => {
+      const correctPred = showPredicted && r.predicted_type === r.process_type;
+      const typeColor   = r.process_type === 'CPU-bound' ? 'var(--cpu)' : 'var(--io)';
+      t += `<tr>
+        <td style="color:var(--accent)">P${r.process_id}</td>
+        <td><span class="type-badge ${r.process_type==='CPU-bound'?'type-cpu':'type-io'}">${r.process_type}</span></td>
+        ${showPredicted ? `<td><span style="color:${correctPred?'var(--io)':'var(--danger)'};font-size:.7rem">${r.predicted_type}${correctPred?' ✓':' ✗'}</span></td>` : ''}
+        <td>${r.arrival_time}</td>
+        <td>${r.cpu_burst_time}</td>
+        ${showPredicted ? `<td style="color:var(--accent2)">${r.quantum_used}ms</td>` : ''}
+        <td>${r.waiting_time}</td>
+        <td>${r.turnaround_time}</td>
+        <td>${r.response_time}</td>
+        <td>${r.finish_time.toFixed(2)}</td>
+      </tr>`;
+    });
+    t += `</tbody></table></div>`;
+    return t;
+  };
+
+  html += `<div id="fcfs-tbl">${renderTable(fcfs.results, false)}</div>`;
+  html += `<div id="rr-tbl" style="display:none">${renderTable(rr.results, false)}</div>`;
+  html += `<div id="ai-tbl" style="display:none">${renderTable(ai.results, true)}</div>`;
+
+  // ── AI Improvement callout ──
+  const fcfsWait = avg(fcfs.results,'waiting_time');
+  const rrWait   = avg(rr.results,'waiting_time');
+  const aiWait   = avg(ai.results,'waiting_time');
+  const impFcfs  = fcfsWait > 0 ? ((fcfsWait - aiWait) / fcfsWait * 100).toFixed(1) : 0;
+  const impRr    = rrWait   > 0 ? ((rrWait   - aiWait) / rrWait   * 100).toFixed(1) : 0;
+
+  // IO-bound deep dive
+  const ioAI  = ai.results.filter(r => r.process_type === 'IO-bound');
+  const ioRR  = rr.results.filter(r => r.process_type === 'IO-bound');
+  const ioAIw = ioAI.length ? avg(ioAI,'waiting_time').toFixed(2) : 'N/A';
+  const ioRRw = ioRR.length ? avg(ioRR,'waiting_time').toFixed(2) : 'N/A';
+
+  html += `
+  <div class="divider"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:14px">
+      <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:8px">AI IMPROVEMENT</div>
+      <div style="font-family:var(--mono);font-size:1.6rem;font-weight:700;color:var(--accent)">${impFcfs}%</div>
+      <div style="font-size:.75rem;color:var(--muted)">less waiting than FCFS</div>
+      <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--accent2);margin-top:6px">${impRr}%</div>
+      <div style="font-size:.75rem;color:var(--muted)">less waiting than Round Robin</div>
+    </div>
+    <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:14px">
+      <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:8px">IO-BOUND PROCESSES</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+        <span style="font-size:.75rem;color:var(--muted)">AI Avg Wait:</span>
+        <span style="font-family:var(--mono);font-weight:700;color:var(--io)">${ioAIw} ms</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-size:.75rem;color:var(--muted)">RR Avg Wait:</span>
+        <span style="font-family:var(--mono);font-weight:700;color:var(--cpu)">${ioRRw} ms</span>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:8px;font-style:italic">AI prioritizes IO-bound → faster response time</div>
+    </div>
+  </div>`;
+
+  html += `</div>`;
+
+  document.getElementById('empty-results').style.display = 'none';
+  document.getElementById('results-content').style.display = '';
+  document.getElementById('results-content').innerHTML = html;
+}
+
+function showTab(tabId, btnId, btn) {
+  ['fcfs-tbl','rr-tbl','ai-tbl'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(tabId).style.display = '';
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
