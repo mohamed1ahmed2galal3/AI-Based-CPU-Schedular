@@ -171,6 +171,8 @@ The project includes:
 ```
 AI Based CPU Scheduler/
 │
+├── AI_CPU_Scheduler_Presentation/
+│   └── ai_cpu_scheduler_presentation.html
 ├── data/
 │   └── processes_dataset.csv
 │
@@ -181,6 +183,8 @@ AI Based CPU Scheduler/
 ├── scheduler/
 │   ├── fcfs.py
 │   ├── round_robin.py
+│   └── sjf.py
+│   └── srtf.py
 │   └── ai_scheduler.py
 │
 ├── simulation/
