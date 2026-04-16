@@ -1,123 +1,185 @@
 import sys
-sys.path.insert(0, r"C:\Users\dell\Desktop\AI Based CPU Schedular")
+sys.path.insert(0, "C:\Users\dell\Desktop\AI Based CPU Schedular")
 
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 
-from scheduler.fcfs        import FCFSScheduler
-from scheduler.round_robin import RoundRobinScheduler
+from scheduler.fcfs         import FCFSScheduler
+from scheduler.round_robin  import RoundRobinScheduler
+from scheduler.sjf          import SJFNonPreemptiveScheduler
+from scheduler.srtf         import SRTFScheduler
 from scheduler.ai_scheduler import AIScheduler
 
-# ─── 1. Load 50 processes للـ simulation ────────────────────────
-df = pd.read_csv( r"C:\Users\dell\Desktop\AI Based CPU Schedular\data\processes_dataset.csv")
+# ─── 1. Load 50 processes ───────────────────────────────────────
+df     = pd.read_csv("C:\\Users\\dell\\Desktop\\AI Based CPU Schedular\\data\\processes_dataset.csv")
 sample = df.sample(50, random_state=7).to_dict("records")
 
-# ─── 2. شغّل الـ 3 schedulers ───────────────────────────────────
-fcfs_results, fcfs_util   = FCFSScheduler().run(sample)
-rr_results,   rr_util     = RoundRobinScheduler(quantum=10).run(sample)
-ai_results,   ai_util     = AIScheduler().run(sample)
+# ─── 2. Run all 5 schedulers ────────────────────────────────────
+fcfs_res,  fcfs_util  = FCFSScheduler().run(sample)
+rr_res,    rr_util    = RoundRobinScheduler(quantum=10).run(sample)
+sjf_res,   sjf_util   = SJFNonPreemptiveScheduler().run(sample)
+srtf_res,  srtf_util  = SRTFScheduler().run(sample)
+ai_res,    ai_util    = AIScheduler().run(sample)
 
+# ─── 3. Summarize ───────────────────────────────────────────────
 def summarize(results, cpu_util, name):
     df_r = pd.DataFrame(results)
     return {
-        "Scheduler":          name,
-        "Avg Waiting Time":   round(df_r["waiting_time"].mean(), 2),
-        "Avg Turnaround":     round(df_r["turnaround_time"].mean(), 2),
-        "Avg Response Time":  round(df_r["response_time"].mean(), 2),
-        "CPU Utilization %":  cpu_util,
+        "Scheduler":         name,
+        "Avg Waiting Time":  round(df_r["waiting_time"].mean(),    2),
+        "Avg Turnaround":    round(df_r["turnaround_time"].mean(), 2),
+        "Avg Response Time": round(df_r["response_time"].mean(),   2),
+        "CPU Utilization %": cpu_util,
     }
 
 summary = pd.DataFrame([
-    summarize(fcfs_results, fcfs_util, "FCFS"),
-    summarize(rr_results,   rr_util,   "Round Robin"),
-    summarize(ai_results,   ai_util,   "AI Scheduler"),
+    summarize(fcfs_res,  fcfs_util,  "FCFS"),
+    summarize(rr_res,    rr_util,    "Round Robin"),
+    summarize(sjf_res,   sjf_util,   "SJF (Non-P)"),
+    summarize(srtf_res,  srtf_util,  "SRTF"),
+    summarize(ai_res,    ai_util,    "AI Scheduler"),
 ])
 
-print("=" * 62)
-print("        Simulation Results — 50 Processes")
-print("=" * 62)
+# ─── 4. Print results table ─────────────────────────────────────
+print("=" * 72)
+print("        Simulation Results — 5 Schedulers · 50 Processes")
+print("=" * 72)
 print(summary.to_string(index=False))
-print("=" * 62)
+print("=" * 72)
 
-# ─── 3. AI prediction accuracy ──────────────────────────────────
-ai_df = pd.DataFrame(ai_results)
+ai_df   = pd.DataFrame(ai_res)
 correct = (ai_df["process_type"] == ai_df["predicted_type"]).sum()
-print(f"\n  AI Prediction Accuracy : {correct}/{len(ai_df)} "
-      f"({correct/len(ai_df)*100:.1f}%)")
+print(f"\n  AI Prediction Accuracy : {correct}/{len(ai_df)} ({correct/len(ai_df)*100:.1f}%)")
 
-# ─── 4. Per-type breakdown for AI ───────────────────────────────
 print("\n  AI Scheduler — Avg Waiting Time per process type:")
 for ptype in ["CPU-bound", "IO-bound"]:
     sub = ai_df[ai_df["process_type"] == ptype]
-    print(f"    {ptype:<12} → {sub['waiting_time'].mean():.2f} ms "
-          f"(n={len(sub)})")
+    print(f"    {ptype:<12} -> {sub['waiting_time'].mean():.2f} ms (n={len(sub)})")
 
+sjf_df  = pd.DataFrame(sjf_res)
+srtf_df = pd.DataFrame(srtf_res)
+imp     = round((sjf_df["waiting_time"].mean() - srtf_df["waiting_time"].mean())
+                / sjf_df["waiting_time"].mean() * 100, 1)
+print(f"\n  SRTF is {imp}% better than SJF in waiting time (preemption benefit)")
 print()
 
-# ─── 5. Plots ───────────────────────────────────────────────────
-colors = ["#e06666", "#f6b26b", "#4a86e8"]
+# ─── 5. Colors ──────────────────────────────────────────────────
+COLORS = {
+    "FCFS":         "#e06666",
+    "Round Robin":  "#f6b26b",
+    "SJF (Non-P)":  "#a8d08d",
+    "SRTF":         "#6aa84f",
+    "AI Scheduler": "#4a86e8",
+}
+colors = [COLORS[s] for s in summary["Scheduler"]]
+labels = summary["Scheduler"].tolist()
+
+# ─── 6. Chart 1 — Full 5-scheduler comparison ───────────────────
 metrics = ["Avg Waiting Time", "Avg Turnaround", "Avg Response Time"]
-labels  = summary["Scheduler"].tolist()
 
-fig, axes = plt.subplots(1, 4, figsize=(18, 5))
-fig.suptitle("Scheduler Comparison — 50 Processes",
+fig, axes = plt.subplots(1, 4, figsize=(20, 5.5))
+fig.suptitle("CPU Scheduler Comparison — 5 Algorithms · 50 Processes",
              fontsize=14, fontweight="bold")
+fig.patch.set_facecolor("#f8f9fa")
 
-# Bar charts for each metric
 for idx, metric in enumerate(metrics):
-    ax = axes[idx]
-    bars = ax.bar(labels, summary[metric], color=colors,
-                  edgecolor="white", width=0.5)
-    ax.set_title(metric)
-    ax.set_ylabel("Time (ms)")
-    ax.set_ylim(0, summary[metric].max() * 1.25)
-    for bar, val in zip(bars, summary[metric]):
+    ax   = axes[idx]
+    vals = summary[metric]
+    bars = ax.bar(labels, vals, color=colors, edgecolor="white", width=0.55)
+    ax.set_title(metric, fontsize=10, fontweight="bold")
+    ax.set_ylabel("Time (ms)", fontsize=9)
+    ax.set_ylim(0, vals.max() * 1.28)
+    ax.set_facecolor("#ffffff")
+    ax.tick_params(axis="x", labelsize=7.5, rotation=12)
+    best_idx = int(vals.idxmin())
+    for i, (bar, val) in enumerate(zip(bars, vals)):
         ax.text(bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + summary[metric].max() * 0.02,
-                f"{val:.1f}", ha="center", va="bottom",
-                fontsize=10, fontweight="bold")
-    ax.tick_params(axis="x", labelsize=9)
+                bar.get_height() + vals.max() * 0.02,
+                f"{val:.0f}", ha="center", va="bottom",
+                fontsize=8.5,
+                fontweight="bold" if i == best_idx else "normal")
+    bars[best_idx].set_edgecolor("#1a5276")
+    bars[best_idx].set_linewidth(2)
 
-# CPU Utilization
-ax = axes[3]
-bars = ax.bar(labels, summary["CPU Utilization %"],
-              color=colors, edgecolor="white", width=0.5)
-ax.set_title("CPU Utilization %")
-ax.set_ylabel("Utilization (%)")
+ax   = axes[3]
+vals = summary["CPU Utilization %"]
+bars = ax.bar(labels, vals, color=colors, edgecolor="white", width=0.55)
+ax.set_title("CPU Utilization %", fontsize=10, fontweight="bold")
+ax.set_ylabel("Utilization (%)", fontsize=9)
 ax.set_ylim(0, 115)
-for bar, val in zip(bars, summary["CPU Utilization %"]):
+ax.set_facecolor("#ffffff")
+ax.tick_params(axis="x", labelsize=7.5, rotation=12)
+for bar, val in zip(bars, vals):
     ax.text(bar.get_x() + bar.get_width() / 2,
             bar.get_height() + 1.5,
-            f"{val:.1f}%", ha="center", va="bottom",
-            fontsize=10, fontweight="bold")
-ax.tick_params(axis="x", labelsize=9)
+            f"{val:.1f}%", ha="center", va="bottom", fontsize=8.5, fontweight="bold")
 
 plt.tight_layout()
-plt.savefig(r"C:\Users\dell\Desktop\AI Based CPU Schedular\scheduler\comparison.png",
-            dpi=150, bbox_inches="tight")
-print("  Chart saved → simulation/comparison.png")
+plt.savefig("C:\\Users\\dell\\Desktop\\AI Based CPU Schedular\\simulation & Evolution\\comparison_5schedulers.png",
+            dpi=150, bbox_inches="tight", facecolor="#f8f9fa")
+print("  Chart saved -> simulation/comparison_5schedulers.png")
 
-# ─── 6. Waiting time by process type (AI vs RR) ─────────────────
-fig2, axes2 = plt.subplots(1, 2, figsize=(12, 5))
-fig2.suptitle("Waiting Time by Process Type — AI vs Round Robin",
+# ─── 7. Chart 2 — SJF vs SRTF deep dive ────────────────────────
+fig2, axes2 = plt.subplots(1, 3, figsize=(14, 5))
+fig2.suptitle("SJF (Non-Preemptive) vs SRTF (Preemptive) — Deep Dive",
               fontsize=13, fontweight="bold")
+fig2.patch.set_facecolor("#f8f9fa")
 
-rr_df = pd.DataFrame(rr_results)
+sjf_srtf = summary[summary["Scheduler"].isin(["SJF (Non-P)", "SRTF"])].reset_index(drop=True)
+s_colors = ["#a8d08d", "#6aa84f"]
+s_labels = sjf_srtf["Scheduler"].tolist()
 
-for ax, (df_sched, sched_name) in zip(
-        axes2, [(rr_df, "Round Robin"), (ai_df, "AI Scheduler")]):
-    cpu_wt = df_sched[df_sched["process_type"] == "CPU-bound"]["waiting_time"]
-    io_wt  = df_sched[df_sched["process_type"] == "IO-bound"]["waiting_time"]
-    ax.boxplot([cpu_wt, io_wt], labels=["CPU-bound", "IO-bound"],
-               patch_artist=True,
-               boxprops=dict(facecolor="#dce8fb"),
-               medianprops=dict(color="#4a86e8", linewidth=2))
-    ax.set_title(sched_name)
-    ax.set_ylabel("Waiting Time (ms)")
+for idx, metric in enumerate(["Avg Waiting Time", "Avg Turnaround", "Avg Response Time"]):
+    ax   = axes2[idx]
+    vals = sjf_srtf[metric]
+    bars = ax.bar(s_labels, vals, color=s_colors, edgecolor="white", width=0.45)
+    ax.set_title(metric, fontsize=10, fontweight="bold")
+    ax.set_ylabel("Time (ms)", fontsize=9)
+    ax.set_ylim(0, vals.max() * 1.3)
+    ax.set_facecolor("#ffffff")
+    for bar, val in zip(bars, vals):
+        ax.text(bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + vals.max() * 0.025,
+                f"{val:.2f}", ha="center", va="bottom",
+                fontsize=10, fontweight="bold")
+    if len(vals) == 2:
+        diff = round((vals.iloc[0] - vals.iloc[1]) / vals.iloc[0] * 100, 1)
+        ax.annotate(f"SRTF saves {diff}%",
+                    xy=(0.5, 0.93), xycoords="axes fraction",
+                    ha="center", fontsize=8.5, color="#1a5276",
+                    bbox=dict(boxstyle="round,pad=0.3",
+                              fc="#d6eaf8", ec="#1a5276", lw=0.8))
 
 plt.tight_layout()
-plt.savefig(r"C:\Users\dell\Desktop\AI Based CPU Schedular\simulation\waiting_by_type.png",
-            dpi=150, bbox_inches="tight")
-print("  Chart saved → simulation/waiting_by_type.png")
+plt.savefig("C:\\Users\\dell\\Desktop\\AI Based CPU Schedular\\simulation & Evolution\\sjf_vs_srtf.png",
+            dpi=150, bbox_inches="tight", facecolor="#f8f9fa")
+print("  Chart saved -> simulation/sjf_vs_srtf.png")
+
+# ─── 8. Chart 3 — Waiting time boxplot all 5 ────────────────────
+fig3, ax3 = plt.subplots(figsize=(13, 5))
+fig3.suptitle("Waiting Time Distribution — All 5 Schedulers",
+              fontsize=13, fontweight="bold")
+fig3.patch.set_facecolor("#f8f9fa")
+ax3.set_facecolor("#ffffff")
+
+all_data = [
+    pd.DataFrame(fcfs_res)["waiting_time"].values,
+    pd.DataFrame(rr_res)["waiting_time"].values,
+    sjf_df["waiting_time"].values,
+    srtf_df["waiting_time"].values,
+    ai_df["waiting_time"].values,
+]
+bp = ax3.boxplot(all_data, patch_artist=True,
+                 tick_labels=["FCFS","Round Robin","SJF (Non-P)","SRTF","AI Scheduler"],
+                 medianprops=dict(linewidth=2, color="#1a5276"))
+for patch, color in zip(bp["boxes"], list(COLORS.values())):
+    patch.set_facecolor(color)
+    patch.set_alpha(0.75)
+
+ax3.set_ylabel("Waiting Time (ms)", fontsize=10)
+ax3.tick_params(axis="x", labelsize=9)
+
+plt.tight_layout()
+plt.savefig("C:\\Users\\dell\\Desktop\\AI Based CPU Schedular\\scheduler\\waiting_distribution.png",
+            dpi=150, bbox_inches="tight", facecolor="#f8f9fa")
+print("  Chart saved -> simulation/waiting_distribution.png")
