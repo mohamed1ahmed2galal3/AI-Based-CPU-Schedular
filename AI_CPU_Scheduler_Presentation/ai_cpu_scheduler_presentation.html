@@ -4,7 +4,6 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>AI-Based Smart CPU Scheduler</title>
-<link rel="shortcut icon" href="AI icon.ico" type="image/x-icon">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -462,8 +461,8 @@ body{
   </div>
   <div class="title-meta">
     <span class="meta-item"><span class="meta-dot"></span>Mohamed Ahmed Galal</span>
-    <!-- <span class="meta-item"><span class="meta-dot"></span>Shahd Mohamed Abd El Azim</span> -->
-    <!-- <span class="meta-item"><span class="meta-dot"></span>Ahmed Mohamed Salah</span>
+    <!-- <span class="meta-item"><span class="meta-dot"></span>Shahd Mohamed Abd El Azim</span>
+    <span class="meta-item"><span class="meta-dot"></span>Ahmed Mohamed Salah</span>
     <span class="meta-item"><span class="meta-dot"></span>Menna Hassabo Mohamed</span>
     <span class="meta-item"><span class="meta-dot"></span>Kerolos Aziz Rezq</span> -->
   </div>
@@ -590,8 +589,8 @@ body{
     <div class="card">
       <div class="card-num">04</div>
       <div class="card-title">Scheduler integration</div>
-      <div class="card-body">ML model embedded in scheduler. CPU-bound → 20ms quantum. I/O-bound → 5ms + priority 10.</div>
-      <span class="card-badge badge-ai">Dynamic</span>
+      <div class="card-body">5 schedulers implemented: FCFS, Round Robin, SJF, SRTF, and AI v2 with dynamic quantum + aging.</div>
+      <span class="card-badge badge-ai">5 schedulers</span>
     </div>
     <div class="card">
       <div class="card-num">05</div>
@@ -665,14 +664,16 @@ body{
   <h2 class="slide-title" style="font-size:clamp(1.6rem,4vw,2.6rem)">
     The numbers <span class="accent">speak</span>
   </h2>
-  <p class="slide-sub" style="margin-bottom:20px">50 processes · identical test conditions · 3 schedulers</p>
+  <p class="slide-sub" style="margin-bottom:20px">50 processes · identical test conditions · 5 schedulers</p>
   <table class="metrics-table">
     <thead>
       <tr>
         <th>Metric</th>
         <th>FCFS</th>
         <th>Round Robin</th>
-        <th>AI Scheduler</th>
+        <th>SJF (Non-P)</th>
+        <th>SRTF</th>
+        <th>AI Scheduler v2</th>
       </tr>
     </thead>
     <tbody>
@@ -680,31 +681,41 @@ body{
         <td>Avg Waiting Time</td>
         <td class="worst">1141 ms</td>
         <td class="worst">1313 ms</td>
-        <td class="best">738 ms ★</td>
+        <td>669 ms</td>
+        <td>655 ms</td>
+        <td class="best">659 ms ★</td>
       </tr>
       <tr class="highlight">
         <td>Avg Turnaround</td>
         <td>1188 ms</td>
         <td>1360 ms</td>
-        <td class="best">785 ms ★</td>
+        <td>716 ms</td>
+        <td>702 ms</td>
+        <td class="best">706 ms ★</td>
       </tr>
       <tr>
         <td>Avg Response Time</td>
         <td>1141 ms</td>
         <td class="best">221 ms</td>
-        <td>731 ms</td>
+        <td>669 ms</td>
+        <td>644 ms</td>
+        <td>649 ms</td>
       </tr>
       <tr>
         <td>CPU Utilization</td>
         <td>99.84%</td>
         <td>99.84%</td>
         <td>99.84%</td>
+        <td>99.84%</td>
+        <td>99.84%</td>
       </tr>
       <tr>
-        <td>Prediction Accuracy</td>
+        <td>IO-bound Wait</td>
+        <td>—</td>
+        <td>573 ms</td>
         <td>—</td>
         <td>—</td>
-        <td class="best">100% ★</td>
+        <td class="best">92 ms ★</td>
       </tr>
     </tbody>
   </table>
@@ -716,7 +727,7 @@ body{
 <div class="slide" id="slide-6">
   <div class="sec-badge">Section 8.4 — Key Findings</div>
   <h2 class="slide-title" style="font-size:clamp(1.5rem,3.5vw,2.4rem)">
-    AI wins by <span class="accent">numbers</span>
+    AI v2 beats <span class="accent">SJF</span> — ties <span class="accent2">SRTF</span>
   </h2>
   <div class="bar-chart" style="margin-bottom:20px">
     <div class="bar-row">
@@ -728,22 +739,34 @@ body{
       <div class="bar-track"><div class="bar-fill" style="width:100%;background:linear-gradient(90deg,#f59e0b,#fbbf24)">1313ms</div></div>
     </div>
     <div class="bar-row">
-      <div class="bar-label"><span class="name">AI Scheduler</span><span class="val">738 ms ★</span></div>
-      <div class="bar-track"><div class="bar-fill" style="width:56%;background:linear-gradient(90deg,#2563eb,#06b6d4)">738ms</div></div>
+      <div class="bar-label"><span class="name">SJF (Non-P)</span><span class="val">669 ms</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:51%;background:linear-gradient(90deg,#a8d08d,#6aa84f)">669ms</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span class="name">SRTF</span><span class="val">655 ms</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:50%;background:linear-gradient(90deg,#6aa84f,#3d6b27)">655ms</div></div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label"><span class="name">AI Scheduler v2</span><span class="val">659 ms ★</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:50%;background:linear-gradient(90deg,#2563eb,#06b6d4)">659ms</div></div>
     </div>
   </div>
   <div class="stats-row">
     <div class="stat-box">
-      <div class="stat-num">35%</div>
+      <div class="stat-num">42%</div>
       <div class="stat-label">better than FCFS</div>
     </div>
     <div class="stat-box">
-      <div class="stat-num">44%</div>
+      <div class="stat-num">50%</div>
       <div class="stat-label">better than Round Robin</div>
     </div>
     <div class="stat-box">
-      <div class="stat-num">73%</div>
-      <div class="stat-label">IO-bound improvement</div>
+      <div class="stat-num">84%</div>
+      <div class="stat-label">IO-bound improvement vs RR</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">~SRTF</div>
+      <div class="stat-label">without oracle knowledge</div>
     </div>
   </div>
 </div>
@@ -835,17 +858,20 @@ body{
       <div class="stat-label">ML accuracy</div>
     </div>
     <div class="stat-box">
-      <div class="stat-num">44%</div>
-      <div class="stat-label">less waiting time</div>
+      <div class="stat-num">42%</div>
+      <div class="stat-label">less wait vs FCFS</div>
     </div>
     <div class="stat-box">
-      <div class="stat-num">73%</div>
-      <div class="stat-label">IO-bound gain</div>
+      <div class="stat-num">84%</div>
+      <div class="stat-label">IO-bound gain vs RR</div>
     </div>
   </div>
   <div class="result-box" style="margin-top:20px">
     <p>
-      We proved that <strong>machine learning can be integrated into OS-level scheduling</strong> to make smarter decisions. The AI Scheduler outperformed FCFS by <strong>35%</strong> and Round-Robin by <strong>44%</strong> in average waiting time — with zero process starvation and equal CPU utilization.
+      AI Scheduler v2 uses <strong>dynamic quantum</strong>, <strong>dynamic priority</strong>, and <strong>aging</strong>
+      to match SRTF performance — without knowing burst times in advance.
+      It beats FCFS by <strong>42%</strong> and Round Robin by <strong>50%</strong> in waiting time,
+      while reducing IO-bound wait from 573ms to just <strong>92ms</strong>.
     </p>
   </div>
   <div class="pills" style="margin-top:16px">
