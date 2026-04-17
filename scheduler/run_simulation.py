@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(0, "C:\Users\dell\Desktop\AI Based CPU Schedular")
+sys.path.insert(0, "/home/claude/ai_cpu_scheduler")
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -11,7 +11,7 @@ from scheduler.srtf         import SRTFScheduler
 from scheduler.ai_scheduler import AIScheduler
 
 # ─── 1. Load 50 processes ───────────────────────────────────────
-df     = pd.read_csv("C:\\Users\\dell\\Desktop\\AI Based CPU Schedular\\data\\processes_dataset.csv")
+df     = pd.read_csv("/home/claude/ai_cpu_scheduler/data/processes_dataset.csv")
 sample = df.sample(50, random_state=7).to_dict("records")
 
 # ─── 2. Run all 5 schedulers ────────────────────────────────────
@@ -19,7 +19,12 @@ fcfs_res,  fcfs_util  = FCFSScheduler().run(sample)
 rr_res,    rr_util    = RoundRobinScheduler(quantum=10).run(sample)
 sjf_res,   sjf_util   = SJFNonPreemptiveScheduler().run(sample)
 srtf_res,  srtf_util  = SRTFScheduler().run(sample)
-ai_res,    ai_util    = AIScheduler().run(sample)
+ai_res,    ai_util    = AIScheduler(
+    cpu_q_factor=0.10, io_q_factor=0.04,
+    cpu_q_min=4,       cpu_q_max=25,
+    io_q_min=1,        io_q_max=5,
+    aging_factor=0.003
+).run(sample)
 
 # ─── 3. Summarize ───────────────────────────────────────────────
 def summarize(results, cpu_util, name):
@@ -115,7 +120,7 @@ for bar, val in zip(bars, vals):
             f"{val:.1f}%", ha="center", va="bottom", fontsize=8.5, fontweight="bold")
 
 plt.tight_layout()
-plt.savefig("C:\\Users\\dell\\Desktop\\AI Based CPU Schedular\\simulation & Evolution\\comparison_5schedulers.png",
+plt.savefig("/home/claude/ai_cpu_scheduler/simulation/comparison_5schedulers.png",
             dpi=150, bbox_inches="tight", facecolor="#f8f9fa")
 print("  Chart saved -> simulation/comparison_5schedulers.png")
 
@@ -151,7 +156,7 @@ for idx, metric in enumerate(["Avg Waiting Time", "Avg Turnaround", "Avg Respons
                               fc="#d6eaf8", ec="#1a5276", lw=0.8))
 
 plt.tight_layout()
-plt.savefig("C:\\Users\\dell\\Desktop\\AI Based CPU Schedular\\simulation & Evolution\\sjf_vs_srtf.png",
+plt.savefig("/home/claude/ai_cpu_scheduler/simulation/sjf_vs_srtf.png",
             dpi=150, bbox_inches="tight", facecolor="#f8f9fa")
 print("  Chart saved -> simulation/sjf_vs_srtf.png")
 
@@ -180,6 +185,6 @@ ax3.set_ylabel("Waiting Time (ms)", fontsize=10)
 ax3.tick_params(axis="x", labelsize=9)
 
 plt.tight_layout()
-plt.savefig("C:\\Users\\dell\\Desktop\\AI Based CPU Schedular\\scheduler\\waiting_distribution.png",
+plt.savefig("/home/claude/ai_cpu_scheduler/simulation/waiting_distribution.png",
             dpi=150, bbox_inches="tight", facecolor="#f8f9fa")
 print("  Chart saved -> simulation/waiting_distribution.png")
