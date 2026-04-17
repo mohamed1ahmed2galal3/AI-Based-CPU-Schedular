@@ -113,7 +113,7 @@ input[type=range]{padding:6px 0;background:transparent;border:none;cursor:pointe
 .proc-item .rm:hover{color:var(--danger)}
 
 /* ── Results ── */
-.results-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.results-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
 .sched-card{
   background:var(--surface2);border:1px solid var(--border);border-radius:12px;
   overflow:hidden;transition:border-color .3s
@@ -210,7 +210,7 @@ tr:hover td{background:rgba(59,130,246,.04)}
     <div class="logo">⚡</div>
     <div>
       <h1>AI CPU Scheduler — Interactive Tester</h1>
-      <p>Compare FCFS · Round Robin · AI Scheduler in real-time</p>
+      <p>Compare FCFS · Round Robin · SJF · SRTF · AI Scheduler in real-time</p>
     </div>
   </header>
 
@@ -228,21 +228,21 @@ tr:hover td{background:rgba(59,130,246,.04)}
           <div class="two-col">
             <div class="field">
               <label>Process Type</label>
-              <select title="process type" id="ptype" onchange="updateTypeHint()">
+              <select id="ptype" onchange="updateTypeHint()">
                 <option value="CPU-bound">CPU-bound</option>
                 <option value="IO-bound">IO-bound</option>
               </select>
             </div>
             <div class="field">
               <label>Arrival Time (ms)</label>
-              <input title="arrival time" type="number" id="arrival" value="0" min="0" step="1"/>
+              <input type="number" id="arrival" value="0" min="0" step="1"/>
             </div>
           </div>
 
           <div class="field">
             <label>CPU Burst Time (ms) <span id="burst-hint" style="color:var(--cpu)">40–100 for CPU-bound</span></label>
             <div class="range-row">
-              <input title="CPU burst time" type="range" id="cpu_burst" min="1" max="120" value="70"
+              <input type="range" id="cpu_burst" min="1" max="120" value="70"
                      oninput="document.getElementById('burst-val').textContent=this.value"/>
               <span class="range-val" id="burst-val">70</span>
             </div>
@@ -251,7 +251,7 @@ tr:hover td{background:rgba(59,130,246,.04)}
           <div class="field">
             <label>I/O Burst Time (ms)</label>
             <div class="range-row">
-              <input title="I/O burst time" type="range" id="io_burst" min="1" max="100" value="8"
+              <input type="range" id="io_burst" min="1" max="100" value="8"
                      oninput="document.getElementById('io-val').textContent=this.value"/>
               <span class="range-val" id="io-val">8</span>
             </div>
@@ -261,7 +261,7 @@ tr:hover td{background:rgba(59,130,246,.04)}
             <div class="field">
               <label>I/O Frequency</label>
               <div class="range-row">
-                <input title="I/O frequency" type="range" id="io_freq" min="0" max="1" step="0.05" value="0.15"
+                <input type="range" id="io_freq" min="0" max="1" step="0.05" value="0.15"
                        oninput="document.getElementById('freq-val').textContent=parseFloat(this.value).toFixed(2)"/>
                 <span class="range-val" id="freq-val">0.15</span>
               </div>
@@ -269,7 +269,7 @@ tr:hover td{background:rgba(59,130,246,.04)}
             <div class="field">
               <label>Priority (1–10)</label>
               <div class="range-row">
-                <input title="priority" type="range" id="priority" min="1" max="10" value="3"
+                <input type="range" id="priority" min="1" max="10" value="3"
                        oninput="document.getElementById('pri-val').textContent=this.value"/>
                 <span class="range-val" id="pri-val">3</span>
               </div>
@@ -279,7 +279,7 @@ tr:hover td{background:rgba(59,130,246,.04)}
           <div class="field">
             <label>Execution Cycles</label>
             <div class="range-row">
-              <input title="execution cycles" type="range" id="exec_cycles" min="50" max="2000" step="50" value="1000"
+              <input type="range" id="exec_cycles" min="50" max="2000" step="50" value="1000"
                      oninput="document.getElementById('cyc-val').textContent=this.value"/>
               <span class="range-val" id="cyc-val">1000</span>
             </div>
@@ -302,7 +302,7 @@ tr:hover td{background:rgba(59,130,246,.04)}
           <div class="field">
             <label>Round Robin Quantum (ms)</label>
             <div class="range-row">
-              <input title="round-robin quantum" type="range" id="rr_quantum" min="1" max="50" value="10"
+              <input type="range" id="rr_quantum" min="1" max="50" value="10"
                      oninput="document.getElementById('q-val').textContent=this.value"/>
               <span class="range-val" id="q-val">10</span>
             </div>
@@ -310,7 +310,7 @@ tr:hover td{background:rgba(59,130,246,.04)}
           <div class="field">
             <label>AI: CPU-bound Quantum (ms)</label>
             <div class="range-row">
-              <input title="AI: CPU-bound quantum" type="range" id="ai_cpu_q" min="5" max="60" value="20"
+              <input type="range" id="ai_cpu_q" min="5" max="60" value="20"
                      oninput="document.getElementById('aicpu-val').textContent=this.value"/>
               <span class="range-val" id="aicpu-val">20</span>
             </div>
@@ -318,12 +318,16 @@ tr:hover td{background:rgba(59,130,246,.04)}
           <div class="field">
             <label>AI: IO-bound Quantum (ms)</label>
             <div class="range-row">
-              <input title="AI: IO-bound quantum" type="range" id="ai_io_q" min="1" max="20" value="5"
+              <input type="range" id="ai_io_q" min="1" max="20" value="5"
                      oninput="document.getElementById('aiio-val').textContent=this.value"/>
               <span class="range-val" id="aiio-val">5</span>
             </div>
           </div>
           <p class="info-tip">AI gives IO-bound processes higher priority + smaller quantum to minimize response time.</p>
+          <div style="margin-top:10px;padding:10px;background:rgba(168,208,141,.07);border:1px solid rgba(168,208,141,.2);border-radius:8px">
+            <p style="font-size:.7rem;color:#a8d08d;font-family:var(--mono);font-weight:700;margin-bottom:4px">SJF &amp; SRTF</p>
+            <p class="info-tip" style="margin-top:0">SJF picks shortest burst at each step (non-preemptive). SRTF preempts current process if a shorter one arrives.</p>
+          </div>
         </div>
       </div>
 
@@ -535,48 +539,162 @@ function runRR(procs, quantum) {
   return { results: done, cpu_util: +((totalBurst / t) * 100).toFixed(2) };
 }
 
+// ── SJF Non-Preemptive ──────────────────────────────────
+function runSJF(procs) {
+  const sorted = [...procs].sort((a,b) => a.arrival_time - b.arrival_time);
+  const n = sorted.length;
+  const done_flags = new Array(n).fill(false);
+  let t = sorted[0].arrival_time, done = [], completed = 0;
+  while (completed < n) {
+    const ready = sorted.filter((_,i) => !done_flags[i] && sorted[i].arrival_time <= t);
+    if (!ready.length) {
+      const next = Math.min(...sorted.filter((_,i) => !done_flags[i]).map(p => p.arrival_time));
+      t = next; continue;
+    }
+    const chosen = ready.reduce((a,b) => a.cpu_burst_time <= b.cpu_burst_time ? a : b);
+    const idx = sorted.findIndex(p => p.process_id === chosen.process_id);
+    const start = t, finish = t + chosen.cpu_burst_time;
+    done.push({
+      process_id: chosen.process_id, process_type: chosen.process_type,
+      arrival_time: chosen.arrival_time, cpu_burst_time: chosen.cpu_burst_time,
+      waiting_time: +(start - chosen.arrival_time).toFixed(2),
+      turnaround_time: +(finish - chosen.arrival_time).toFixed(2),
+      response_time: +(start - chosen.arrival_time).toFixed(2),
+      finish_time: finish
+    });
+    t = finish; done_flags[idx] = true; completed++;
+  }
+  const totalBurst = procs.reduce((s,p) => s + p.cpu_burst_time, 0);
+  return { results: done, cpu_util: +((totalBurst / t) * 100).toFixed(2) };
+}
+
+// ── SRTF Preemptive SJF ─────────────────────────────────
+function runSRTF(procs) {
+  const enriched = [...procs].sort((a,b) => a.arrival_time - b.arrival_time)
+    .map(p => ({...p, remaining: p.cpu_burst_time, firstRun: null}));
+  let t = enriched[0].arrival_time, done = [], completed = 0;
+  while (completed < enriched.length) {
+    const ready = enriched.filter(p => p.arrival_time <= t && p.remaining > 0);
+    if (!ready.length) {
+      const future = enriched.filter(p => p.remaining > 0);
+      if (!future.length) break;
+      t = Math.min(...future.map(p => p.arrival_time)); continue;
+    }
+    const chosen = ready.reduce((a,b) =>
+      a.remaining < b.remaining ? a : (a.remaining === b.remaining && a.arrival_time < b.arrival_time ? a : b));
+    if (chosen.firstRun === null) chosen.firstRun = t;
+    const futureArrivals = enriched
+      .filter(p => p.arrival_time > t && p.remaining > 0)
+      .map(p => p.arrival_time);
+    let runFor = futureArrivals.length
+      ? Math.min(chosen.remaining, Math.min(...futureArrivals) - t)
+      : chosen.remaining;
+    if (runFor <= 0) runFor = chosen.remaining;
+    chosen.remaining -= runFor; t += runFor;
+    if (chosen.remaining <= 1e-9) {
+      chosen.remaining = 0;
+      done.push({
+        process_id: chosen.process_id, process_type: chosen.process_type,
+        arrival_time: chosen.arrival_time, cpu_burst_time: chosen.cpu_burst_time,
+        waiting_time: +Math.max(0, t - chosen.arrival_time - chosen.cpu_burst_time).toFixed(2),
+        turnaround_time: +(t - chosen.arrival_time).toFixed(2),
+        response_time: +Math.max(0, chosen.firstRun - chosen.arrival_time).toFixed(2),
+        finish_time: +t.toFixed(2)
+      });
+      completed++;
+    }
+  }
+  const totalBurst = procs.reduce((s,p) => s + p.cpu_burst_time, 0);
+  return { results: done, cpu_util: +((totalBurst / t) * 100).toFixed(2) };
+}
+
 function aiClassify(p) {
-  // Mirrors the trained model's decision logic
   if (p.cpu_io_ratio > 2.0 || (p.cpu_burst_time > 30 && p.io_frequency < 0.4)) return 'CPU-bound';
   if (p.io_frequency > 0.5 || p.io_burst_time > p.cpu_burst_time * 1.5) return 'IO-bound';
   return p.cpu_burst_time > 35 ? 'CPU-bound' : 'IO-bound';
 }
 
+function aiDynamicQuantum(type, burst, cpuF, ioF) {
+  if (type === 'CPU-bound') {
+    return Math.max(4, Math.min(25, burst * cpuF));
+  } else {
+    return Math.max(1, Math.min(5, burst * ioF));
+  }
+}
+
+function aiBasePriority(type, remaining, ioFreq) {
+  const r = Math.max(remaining, 0.1);
+  if (type === 'IO-bound') {
+    return (1.0 / r) * 200 + (ioFreq || 0) * 10;
+  } else {
+    return (1.0 / r) * 50;
+  }
+}
+
+function aiEffectivePriority(p, currentTime, agingFactor) {
+  const timeRun    = p.cpu_burst_time - p.remaining;
+  const waitSoFar  = Math.max(0, currentTime - p.arrival_time - timeRun);
+  return aiBasePriority(p.predicted, p.remaining, p.io_frequency) + waitSoFar * agingFactor;
+}
+
 function runAI(procs, cpuQ, ioQ) {
+  const CPU_F  = 0.10, IO_F = 0.04, AGING = 0.003;
   const enriched = [...procs].sort((a,b) => a.arrival_time - b.arrival_time).map(p => ({
     ...p,
-    predicted: aiClassify(p),
-    quantum: aiClassify(p) === 'CPU-bound' ? cpuQ : ioQ,
-    dynPri: aiClassify(p) === 'CPU-bound' ? 1 : 10,
-    remaining: p.cpu_burst_time, firstRun: null
+    predicted:  aiClassify(p),
+    quantum:    aiDynamicQuantum(aiClassify(p), p.cpu_burst_time, CPU_F, IO_F),
+    remaining:  p.cpu_burst_time,
+    firstRun:   null,
   }));
+
   let t = enriched[0].arrival_time, done = [], queue = [], i = 0;
+
   const enqueue = () => {
-    while (i < enriched.length && enriched[i].arrival_time <= t) { queue.push(enriched[i]); i++; }
-    queue.sort((a,b) => b.dynPri - a.dynPri || a.arrival_time - b.arrival_time);
+    while (i < enriched.length && enriched[i].arrival_time <= t) {
+      queue.push(enriched[i]); i++;
+    }
+    queue.sort((a,b) =>
+      aiEffectivePriority(b, t, AGING) - aiEffectivePriority(a, t, AGING)
+      || a.arrival_time - b.arrival_time
+    );
   };
+
   enqueue();
+
   while (queue.length || i < enriched.length) {
     if (!queue.length) { t = enriched[i].arrival_time; enqueue(); }
     const p = queue.shift();
     if (p.firstRun === null) p.firstRun = t;
-    const run = Math.min(p.quantum, p.remaining);
+
+    const quantum  = aiDynamicQuantum(p.predicted, p.remaining, CPU_F, IO_F);
+    const run      = Math.min(quantum, p.remaining);
     t += run; p.remaining -= run;
     enqueue();
-    if (p.remaining > 0) { queue.push(p); queue.sort((a,b) => b.dynPri - a.dynPri || a.arrival_time - b.arrival_time); }
-    else {
+
+    if (p.remaining > 1e-9) {
+      p.quantum = aiDynamicQuantum(p.predicted, p.remaining, CPU_F, IO_F);
+      queue.push(p);
+      queue.sort((a,b) =>
+        aiEffectivePriority(b, t, AGING) - aiEffectivePriority(a, t, AGING)
+        || a.arrival_time - b.arrival_time
+      );
+    } else {
+      p.remaining = 0;
       done.push({
-        process_id: p.process_id, process_type: p.process_type,
+        process_id:     p.process_id,
+        process_type:   p.process_type,
         predicted_type: p.predicted,
-        arrival_time: p.arrival_time, cpu_burst_time: p.cpu_burst_time,
-        quantum_used: p.quantum,
-        waiting_time: +Math.max(0, t - p.arrival_time - p.cpu_burst_time).toFixed(2),
-        turnaround_time: +(t - p.arrival_time).toFixed(2),
-        response_time: +Math.max(0, p.firstRun - p.arrival_time).toFixed(2),
-        finish_time: t
+        arrival_time:   p.arrival_time,
+        cpu_burst_time: p.cpu_burst_time,
+        quantum_used:   +quantum.toFixed(2),
+        waiting_time:   +Math.max(0, t - p.arrival_time - p.cpu_burst_time).toFixed(2),
+        turnaround_time:+(t - p.arrival_time).toFixed(2),
+        response_time:  +Math.max(0, p.firstRun - p.arrival_time).toFixed(2),
+        finish_time:    t,
       });
     }
   }
+
   const totalBurst = procs.reduce((s,p) => s + p.cpu_burst_time, 0);
   return { results: done, cpu_util: +((totalBurst / t) * 100).toFixed(2) };
 }
@@ -595,11 +713,15 @@ function runAll() {
 
   const fcfs = runFCFS(processes);
   const rr   = runRR(processes, quantum);
+  const sjf  = runSJF(processes);
+  const srtf = runSRTF(processes);
   const ai   = runAI(processes, aiCpuQ, aiIoQ);
 
   const scheds = [
     { name:'FCFS',         color:'#ef4444', data: fcfs },
     { name:'Round Robin',  color:'#f59e0b', data: rr   },
+    { name:'SJF (Non-P)',  color:'#a8d08d', data: sjf  },
+    { name:'SRTF',         color:'#6aa84f', data: srtf },
     { name:'AI Scheduler', color:'#3b82f6', data: ai   },
   ];
 
@@ -685,17 +807,17 @@ function runAll() {
   });
   html += `</div>`;
 
-  // ── Tabs for per-process table ──
   html += `
   <div class="divider"></div>
   <div class="tabs">
-    <button class="tab active" onclick="showTab('fcfs-tbl','tab-fcfs',this)">FCFS</button>
-    <button class="tab" onclick="showTab('rr-tbl','tab-rr',this)">Round Robin</button>
-    <button class="tab" onclick="showTab('ai-tbl','tab-ai',this)">AI Scheduler</button>
+    <button class="tab active" onclick="showTab('fcfs-tbl',this)">FCFS</button>
+    <button class="tab" onclick="showTab('rr-tbl',this)">Round Robin</button>
+    <button class="tab" onclick="showTab('sjf-tbl',this)">SJF</button>
+    <button class="tab" onclick="showTab('srtf-tbl',this)">SRTF</button>
+    <button class="tab" onclick="showTab('ai-tbl',this)">AI Scheduler</button>
   </div>`;
 
-  // ── Tables ──
-  const renderTable = (results, showPredicted) => {
+  const renderTable = (results, showPredicted, showSJFNote=false) => {
     let t = `<div class="tbl-wrap"><table>
       <thead><tr>
         <th>PID</th><th>Type</th>${showPredicted?'<th>Predicted</th>':''}
@@ -704,7 +826,6 @@ function runAll() {
       </tr></thead><tbody>`;
     results.forEach(r => {
       const correctPred = showPredicted && r.predicted_type === r.process_type;
-      const typeColor   = r.process_type === 'CPU-bound' ? 'var(--cpu)' : 'var(--io)';
       t += `<tr>
         <td style="color:var(--accent)">P${r.process_id}</td>
         <td><span class="type-badge ${r.process_type==='CPU-bound'?'type-cpu':'type-io'}">${r.process_type}</span></td>
@@ -715,51 +836,71 @@ function runAll() {
         <td>${r.waiting_time}</td>
         <td>${r.turnaround_time}</td>
         <td>${r.response_time}</td>
-        <td>${r.finish_time.toFixed(2)}</td>
+        <td>${r.finish_time.toFixed ? r.finish_time.toFixed(2) : r.finish_time}</td>
       </tr>`;
     });
     t += `</tbody></table></div>`;
+    if (showSJFNote) {
+      t += `<p style="font-size:.7rem;color:var(--muted);margin-top:8px;font-family:var(--mono);font-style:italic">
+        * SJF: picks shortest burst at each CPU-free moment (non-preemptive) &nbsp;|&nbsp; SRTF: preempts if shorter job arrives mid-execution
+      </p>`;
+    }
     return t;
   };
 
   html += `<div id="fcfs-tbl">${renderTable(fcfs.results, false)}</div>`;
-  html += `<div id="rr-tbl" style="display:none">${renderTable(rr.results, false)}</div>`;
-  html += `<div id="ai-tbl" style="display:none">${renderTable(ai.results, true)}</div>`;
+  html += `<div id="rr-tbl"   style="display:none">${renderTable(rr.results,   false)}</div>`;
+  html += `<div id="sjf-tbl"  style="display:none">${renderTable(sjf.results,  false, true)}</div>`;
+  html += `<div id="srtf-tbl" style="display:none">${renderTable(srtf.results, false, true)}</div>`;
+  html += `<div id="ai-tbl"   style="display:none">${renderTable(ai.results,   true)}</div>`;
 
-  // ── AI Improvement callout ──
+  // ── Improvement callout ──
   const fcfsWait = avg(fcfs.results,'waiting_time');
   const rrWait   = avg(rr.results,'waiting_time');
+  const sjfWait  = avg(sjf.results,'waiting_time');
+  const srtfWait = avg(srtf.results,'waiting_time');
   const aiWait   = avg(ai.results,'waiting_time');
-  const impFcfs  = fcfsWait > 0 ? ((fcfsWait - aiWait) / fcfsWait * 100).toFixed(1) : 0;
-  const impRr    = rrWait   > 0 ? ((rrWait   - aiWait) / rrWait   * 100).toFixed(1) : 0;
+  const impFcfs  = fcfsWait > 0 ? ((fcfsWait  - aiWait)  / fcfsWait  * 100).toFixed(1) : 0;
+  const impRr    = rrWait   > 0 ? ((rrWait    - aiWait)  / rrWait    * 100).toFixed(1) : 0;
+  const impSJF   = sjfWait  > 0 ? ((sjfWait   - srtfWait)/ sjfWait   * 100).toFixed(1) : 0;
 
-  // IO-bound deep dive
-  const ioAI  = ai.results.filter(r => r.process_type === 'IO-bound');
-  const ioRR  = rr.results.filter(r => r.process_type === 'IO-bound');
-  const ioAIw = ioAI.length ? avg(ioAI,'waiting_time').toFixed(2) : 'N/A';
-  const ioRRw = ioRR.length ? avg(ioRR,'waiting_time').toFixed(2) : 'N/A';
+  const ioAI   = ai.results.filter(r => r.process_type === 'IO-bound');
+  const ioRR   = rr.results.filter(r => r.process_type === 'IO-bound');
+  const ioSRTF = srtf.results.filter(r => r.process_type === 'IO-bound');
+  const ioAIw   = ioAI.length   ? avg(ioAI,'waiting_time').toFixed(2)   : 'N/A';
+  const ioRRw   = ioRR.length   ? avg(ioRR,'waiting_time').toFixed(2)   : 'N/A';
+  const ioSRTFw = ioSRTF.length ? avg(ioSRTF,'waiting_time').toFixed(2) : 'N/A';
 
   html += `
   <div class="divider"></div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
     <div style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:14px">
       <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:8px">AI IMPROVEMENT</div>
-      <div style="font-family:var(--mono);font-size:1.6rem;font-weight:700;color:var(--accent)">${impFcfs}%</div>
-      <div style="font-size:.75rem;color:var(--muted)">less waiting than FCFS</div>
-      <div style="font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--accent2);margin-top:6px">${impRr}%</div>
-      <div style="font-size:.75rem;color:var(--muted)">less waiting than Round Robin</div>
+      <div style="font-family:var(--mono);font-size:1.5rem;font-weight:700;color:var(--accent)">${impFcfs}%</div>
+      <div style="font-size:.72rem;color:var(--muted)">less waiting than FCFS</div>
+      <div style="font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--accent2);margin-top:6px">${impRr}%</div>
+      <div style="font-size:.72rem;color:var(--muted)">less waiting than Round Robin</div>
+    </div>
+    <div style="background:rgba(106,168,79,.08);border:1px solid rgba(106,168,79,.2);border-radius:10px;padding:14px">
+      <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:8px">SJF vs SRTF</div>
+      <div style="font-family:var(--mono);font-size:1.5rem;font-weight:700;color:#6aa84f">${impSJF}%</div>
+      <div style="font-size:.72rem;color:var(--muted)">SRTF beats SJF (preemption)</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-top:8px;font-style:italic">SRTF: ${srtfWait.toFixed(1)}ms &nbsp;|&nbsp; SJF: ${sjfWait.toFixed(1)}ms</div>
     </div>
     <div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:10px;padding:14px">
-      <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:8px">IO-BOUND PROCESSES</div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-        <span style="font-size:.75rem;color:var(--muted)">AI Avg Wait:</span>
+      <div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);margin-bottom:8px">IO-BOUND AVG WAIT</div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:.72rem;color:var(--muted)">AI:</span>
         <span style="font-family:var(--mono);font-weight:700;color:var(--io)">${ioAIw} ms</span>
       </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+        <span style="font-size:.72rem;color:var(--muted)">SRTF:</span>
+        <span style="font-family:var(--mono);font-weight:700;color:#6aa84f">${ioSRTFw} ms</span>
+      </div>
       <div style="display:flex;justify-content:space-between">
-        <span style="font-size:.75rem;color:var(--muted)">RR Avg Wait:</span>
+        <span style="font-size:.72rem;color:var(--muted)">Round Robin:</span>
         <span style="font-family:var(--mono);font-weight:700;color:var(--cpu)">${ioRRw} ms</span>
       </div>
-      <div style="font-size:.72rem;color:var(--muted);margin-top:8px;font-style:italic">AI prioritizes IO-bound → faster response time</div>
     </div>
   </div>`;
 
@@ -770,8 +911,8 @@ function runAll() {
   document.getElementById('results-content').innerHTML = html;
 }
 
-function showTab(tabId, btnId, btn) {
-  ['fcfs-tbl','rr-tbl','ai-tbl'].forEach(id => {
+function showTab(tabId, btn) {
+  ['fcfs-tbl','rr-tbl','sjf-tbl','srtf-tbl','ai-tbl'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
