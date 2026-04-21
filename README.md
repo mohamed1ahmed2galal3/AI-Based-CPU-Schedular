@@ -1,29 +1,38 @@
-🤖 AI-Based CPU Scheduler
+# 🤖 AI-Based Smart CPU Scheduler (Enhanced Version)
 
-📌 Project Overview
+## 📌 Project Overview
 
-This project presents an **AI-based CPU Scheduling system** that improves traditional scheduling algorithms by using **Machine Learning** to classify processes and dynamically adjust scheduling decisions.
+This project presents an advanced AI-based CPU Scheduling system that significantly improves traditional scheduling algorithms by combining Machine Learning with adaptive runtime mechanisms.
 
-Traditional schedulers (e.g., FCFS, Round Robin) treat all processes equally, which often leads to inefficient CPU utilization and high waiting times.
-This project introduces an intelligent scheduler that adapts based on process behavior.
+Unlike conventional schedulers such as FCFS and Round Robin, which rely on static rules, this system introduces a **fully adaptive scheduler** capable of dynamically adjusting its behavior based on real-time process characteristics.
+
+The enhanced version includes:
+- Dynamic time quantum allocation  
+- Continuous priority recalculation  
+- Aging to prevent starvation  
+- Preemptive decision-making  
+
+It also benchmarks performance against **SJF and SRTF**, achieving **near-optimal results in realistic environments**.
 
 ---
 
-🎯 Objectives
+## 🎯 Objectives
 
-* Simulate and compare classical scheduling algorithms:
+- Compare multiple scheduling algorithms:
+  - FCFS  
+  - Round Robin  
+  - SJF  
+  - SRTF  
 
-  * First Come First Serve (FCFS)
-  * Round Robin (RR)
-* Build a **Machine Learning model** to classify processes:
+- Build an ML model to classify:
+  - CPU-bound  
+  - IO-bound  
 
-  * CPU-bound
-  * IO-bound
-* Develop an **AI Scheduler** that:
-
-  * Assigns dynamic priorities
-  * Adjusts time quantum based on process type
-* Evaluate performance using multiple metrics
+- Develop an adaptive AI scheduler that:
+  - Uses dynamic quantum  
+  - Applies dynamic priority  
+  - Prevents starvation  
+  - Supports preemption  
 
 ---
 
@@ -31,138 +40,143 @@ This project introduces an intelligent scheduler that adapts based on process be
 
 The system integrates:
 
-1. Machine Learning (Random Forest)
-2. Dynamic Scheduling
-3. Hybrid Strategy (Priority + Round Robin)
+- Machine Learning (**Random Forest**)  
+- Adaptive Scheduling  
+- Hybrid Strategy (Priority + Preemption)
 
-Instead of static rules:
+### 🔥 Key Innovations
 
-* CPU-bound processes → longer execution time (larger quantum)
-* IO-bound processes → faster response (higher priority, smaller quantum)
+- **Dynamic Quantum**
+  - CPU-bound → 4–25 ms  
+  - IO-bound → 1–5 ms  
+
+- **Dynamic Priority**
+  - Based on remaining time  
+  - Shorter processes get higher priority  
+
+- **Aging**
+  - Prevents starvation  
+
+- **Preemption**
+  - High-priority processes interrupt execution  
+
+👉 Result:  
+A hybrid scheduler that approximates **SJF + SRTF behavior without prior knowledge**.
 
 ---
 
-## 📊 Dataset Generation
+## 📊 Dataset
 
-A synthetic dataset of processes is generated with the following features:
+Synthetic dataset with features:
 
-| Feature          | Description                  |
-| ---------------- | ---------------------------- |
-| process_id       | Unique identifier            |
-| arrival_time     | Time when process arrives    |
-| cpu_burst_time   | CPU execution time           |
-| io_burst_time    | I/O waiting time             |
-| io_frequency     | Frequency of I/O operations  |
-| execution_cycles | Number of CPU cycles         |
-| priority         | Process priority             |
-| cpu_io_ratio     | Ratio of CPU to I/O time     |
-| process_type     | Label (CPU-bound / IO-bound) |
+| Feature | Description |
+|--------|------------|
+| process_id | Unique ID |
+| arrival_time | Arrival time |
+| cpu_burst_time | CPU time |
+| io_burst_time | I/O time |
+| io_frequency | I/O frequency |
+| execution_cycles | Cycles |
+| priority | Initial priority |
+| cpu_io_ratio | CPU vs IO |
+| process_type | Label |
 
 ---
 
 ## 🤖 Machine Learning Model
 
-### Model Used:
-
-* **Random Forest Classifier**
+**Model:** Random Forest  
 
 ### Steps:
-
-1. Load dataset
-2. Select features and label
-3. Encode labels
-4. Split data (80% train / 20% test)
-5. Train model
-6. Evaluate using:
-
-   * Accuracy
-   * Cross-validation
-   * Classification report
-7. Save model using `joblib`
+- Load dataset  
+- Train/Test split (80/20)  
+- Train model  
+- Evaluate (accuracy, CV)  
+- Save using `joblib`  
 
 ---
 
 ## ⚙️ Scheduling Algorithms
 
-### 1. FCFS (First Come First Serve)
-
-* Executes processes in order of arrival
-* Non-preemptive
-* Simple but inefficient
-
----
+### 1. FCFS
+- Non-preemptive  
+- Simple, inefficient  
 
 ### 2. Round Robin
+- Preemptive  
+- Fixed quantum  
 
-* Each process gets equal time quantum
-* Preemptive
-* Improves fairness but ignores process type
+### 3. SJF
+- Optimal (non-preemptive)  
+- Unrealistic assumption  
 
----
+### 4. SRTF
+- Optimal (preemptive)  
+- Theoretical benchmark  
 
-### 3. AI Scheduler (Proposed Model) 🚀
+### 5. AI Scheduler 🚀
 
-#### Key Features:
+- ML-based classification  
+- Dynamic quantum  
+- Dynamic priority  
+- Aging  
+- Preemptive  
 
-* Predicts process type using ML
-* Assigns:
-
-  * **CPU-bound** → Large quantum (20ms), low priority
-  * **IO-bound** → Small quantum (5ms), high priority
-* Uses **dynamic priority queue**
-* Combines:
-
-  * Priority Scheduling
-  * Round Robin
+👉 Near-optimal performance without unrealistic assumptions.
 
 ---
 
 ## 📈 Performance Metrics
 
-The system evaluates:
-
-* **Waiting Time**
-* **Turnaround Time**
-* **Response Time**
-* **CPU Utilization**
+- Waiting Time  
+- Turnaround Time  
+- Response Time  
+- CPU Utilization  
 
 ---
 
 ## 🔬 Simulation
 
-* Random sample of 50 processes
-* All schedulers are executed on the same dataset
-* Results are compared using:
+- 50 processes  
+- Same dataset for all schedulers  
+- Fair comparison  
 
-  * Statistical summaries
-  * Visualization charts
+### Includes:
+- 5-scheduler comparison  
+- SJF vs SRTF analysis  
+- Waiting time distribution  
 
 ---
 
-## 📊 Results & Insights
+## 📊 Results
 
-### Key Findings:
+### 🔥 Improvements:
 
-* AI Scheduler significantly reduces **waiting time**
-* IO-bound processes benefit the most
-* CPU utilization improves
-* Better balance between fairness and efficiency
+- AI Waiting Time:
+  - **738 → 659 ms**
+
+- Improvement:
+  - FCFS → ~42%  
+  - RR → ~50%  
+
+- IO-bound:
+  - **154 → 92 ms**
+
+- vs SRTF:
+  - ~**4 ms difference only**
 
 ---
 
 ## 📉 Visualizations
 
-The project includes:
+- Bar charts:
+  - Waiting / Turnaround / Response / CPU  
 
-* Bar charts for:
+- Boxplots:
+  - Waiting distribution  
 
-  * Waiting Time
-  * Turnaround Time
-  * Response Time
-  * CPU Utilization
-* Box plots:
-
-  * Distribution of waiting time per process type
+- Deep dive:
+  - SJF vs SRTF  
 
 ---
 
@@ -173,6 +187,7 @@ AI Based CPU Scheduler/
 │
 ├── AI_CPU_Scheduler_Presentation/
 │   └── ai_cpu_scheduler_presentation.html
+│
 ├── data/
 │   └── processes_dataset.csv
 │
@@ -183,74 +198,79 @@ AI Based CPU Scheduler/
 ├── scheduler/
 │   ├── fcfs.py
 │   ├── round_robin.py
-│   └── sjf.py
-│   └── srtf.py
+│   ├── sjf.py
+│   ├── srtf.py
 │   └── ai_scheduler.py
 │
 ├── simulation/
 │   ├── comparison.png
-│   └── waiting_by_type.png
+│   ├── sjf_vs_srtf.png
+│   └── waiting_distribution.png
 │
-└── main_simulation.py
+├── run_simulation.py
+└── cpu_scheduler_ui.html
 ```
 
 ---
 
 ## 🚀 How to Run
 
-1. Generate dataset:
-
-```
+### 1. Generate Dataset
+```bash
 python generate_dataset.py
 ```
 
-2. Train model:
-
-```
+### 2. Train Model
+```bash
 python train_model.py
 ```
 
-3. Run simulation:
-
+### 3. Run Simulation
+```bash
+python run_simulation.py
 ```
-python main_simulation.py
+
+### 4. Open UI
+Open:
+```
+cpu_scheduler_ui.html
 ```
 
 ---
 
-## 🧩 Technologies Used
+## 🧩 Technologies
 
-* Python
-* NumPy
-* Pandas
-* Scikit-learn
-* Matplotlib
-* Joblib
+- Python  
+- NumPy  
+- Pandas  
+- Scikit-learn  
+- Matplotlib  
+- Joblib  
 
 ---
 
-## 🔮 Future Improvements
+## 🔮 Future Work
 
-* Dynamic quantum using Reinforcement Learning
-* Real-time scheduling simulation
-* Integration with OS-level schedulers
-* Adding more process features
+- Reinforcement Learning  
+- Multi-core scheduling  
+- Real OS integration  
+- Context-switch modeling  
 
 ---
 
 ## 📌 Conclusion
 
-This project demonstrates how **Artificial Intelligence can enhance operating system scheduling** by making smarter, data-driven decisions.
+This project transforms CPU scheduling into a **dynamic and intelligent system**.
 
-The AI Scheduler outperforms traditional methods by:
-
-* Adapting to process behavior
-* Reducing waiting time
-* Improving system efficiency
+The AI Scheduler:
+- Adapts in real time  
+- Achieves near-SRTF performance  
+- Reduces waiting time  
+- Prevents starvation  
 
 ---
 
 ## 👨‍💻 Author
 
-Developed as part of an academic project on:
-**AI-Based CPU Scheduling Systems**
+Academic Project:  
+**AI-Based Smart CPU Scheduling**
