@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="shortcut icon" href="AI icon.ico" type="image/x-icon">
 <title>AI-Based Smart CPU Scheduler</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
@@ -58,19 +59,36 @@ body{
   pointer-events:none;z-index:0;
 }
 
-/* animated orbs */
+/* animated orbs — more + bigger */
 .orb{
   position:fixed;border-radius:50%;
-  filter:blur(80px);pointer-events:none;z-index:0;opacity:.18;
-  animation:orbFloat 8s ease-in-out infinite;
+  filter:blur(90px);pointer-events:none;z-index:0;
+  animation:orbFloat ease-in-out infinite;
 }
-.orb1{width:500px;height:500px;background:var(--accent);top:-150px;right:-100px;animation-delay:0s}
-.orb2{width:400px;height:400px;background:var(--accent3);bottom:-100px;left:-100px;animation-delay:-3s}
-.orb3{width:300px;height:300px;background:var(--accent2);top:40%;left:40%;animation-delay:-5s}
+.orb1{width:580px;height:580px;background:var(--accent);top:-180px;right:-120px;opacity:.22;animation-duration:14s;animation-delay:0s}
+.orb2{width:480px;height:480px;background:var(--accent3);bottom:-120px;left:-120px;opacity:.2;animation-duration:18s;animation-delay:-4s}
+.orb3{width:360px;height:360px;background:var(--accent2);top:38%;left:38%;opacity:.12;animation-duration:22s;animation-delay:-8s}
+.orb4{width:280px;height:280px;background:var(--cpu);top:8%;left:18%;opacity:.1;animation-duration:20s;animation-delay:-6s}
+.orb5{width:220px;height:220px;background:var(--io);bottom:18%;right:22%;opacity:.09;animation-duration:26s;animation-delay:-12s}
 @keyframes orbFloat{
   0%,100%{transform:translate(0,0) scale(1)}
-  33%{transform:translate(30px,-20px) scale(1.05)}
-  66%{transform:translate(-20px,25px) scale(.95)}
+  25% {transform:translate(45px,-55px) scale(1.07)}
+  50% {transform:translate(-35px,-80px) scale(.93)}
+  75% {transform:translate(60px,-30px) scale(1.04)}
+}
+
+/* canvas bg */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+
+/* cursor trail glow */
+.cursor-trail{
+  position:fixed;border-radius:50%;pointer-events:none;
+  z-index:9990;mix-blend-mode:screen;
+  animation:trailFade .6s ease-out forwards;
+}
+@keyframes trailFade{
+  0%  {opacity:.7;transform:scale(1)}
+  100%{opacity:0;transform:scale(0)}
 }
 
 /* slide engine */
@@ -431,6 +449,7 @@ body{
 </head>
 <body>
 
+<canvas id="bg-canvas"></canvas>
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 <div class="bg-grid"></div>
@@ -438,6 +457,8 @@ body{
 <div class="orb orb1"></div>
 <div class="orb orb2"></div>
 <div class="orb orb3"></div>
+<div class="orb orb4"></div>
+<div class="orb orb5"></div>
 
 <!-- ═══════════════════════════════════════════
      SLIDE 1 — TITLE
@@ -948,20 +969,351 @@ document.addEventListener('keydown', e=>{
   if(e.key==='ArrowLeft'||e.key==='ArrowUp') changeSlide(-1);
 });
 
-// cursor
+// cursor smooth follow
 const cur = document.getElementById('cursor');
 const ring = document.getElementById('cursorRing');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
-function animCursor(){
-  cur.style.left=(mx-5)+'px';cur.style.top=(my-5)+'px';
-  rx+=(mx-rx)*.12;ry+=(my-ry)*.12;
-  ring.style.left=(rx-18)+'px';ring.style.top=(ry-18)+'px';
+let mx=0, my=0, rx=0, ry=0;
+const TRAIL_COLORS = ['#06b6d4','#2563eb','#8b5cf6','#f59e0b','#10b981'];
+let trailTick = 0;
+
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; spawnTrail(mx, my); });
+
+function spawnTrail(x, y) {
+  trailTick++;
+  if (trailTick % 3 !== 0) return; // every 3rd move
+  const t = document.createElement('div');
+  t.className = 'cursor-trail';
+  const sz = Math.random() * 10 + 5;
+  const col = TRAIL_COLORS[Math.floor(Math.random() * TRAIL_COLORS.length)];
+  t.style.cssText = `width:${sz}px;height:${sz}px;left:${x - sz/2}px;top:${y - sz/2}px;background:${col};filter:blur(${sz*.4}px)`;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 620);
+}
+
+// cursor ring hover effect
+document.querySelectorAll('button, .dot, .card, .stat-box, .col-card, .flow-box').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    ring.style.width = '56px'; ring.style.height = '56px';
+    ring.style.borderColor = 'rgba(6,182,212,.8)';
+    cur.style.transform = 'scale(2)';
+  });
+  el.addEventListener('mouseleave', () => {
+    ring.style.width = '36px'; ring.style.height = '36px';
+    ring.style.borderColor = 'rgba(6,182,212,.4)';
+    cur.style.transform = 'scale(1)';
+  });
+});
+
+function animCursor() {
+  cur.style.left  = (mx - 5) + 'px';
+  cur.style.top   = (my - 5) + 'px';
+  rx += (mx - rx) * .1;
+  ry += (my - ry) * .1;
+  ring.style.left = (rx - 18) + 'px';
+  ring.style.top  = (ry - 18) + 'px';
   requestAnimationFrame(animCursor);
 }
 animCursor();
 
 updateNav();
 </script>
-</body>
-</html>
+
+<!-- ══ BACKGROUND PARTICLE + EFFECTS ENGINE ══ -->
+<script>
+(function () {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx    = canvas.getContext('2d');
+  // Theme colors matching the presentation palette
+  const COLORS = ['#2563eb','#06b6d4','#8b5cf6','#f59e0b','#10b981','#60a5fa'];
+  let W, H, tick = 0;
+  let particles = [], meteors = [], rings = [], bursts = [], waves = [];
+  let mouseX = -9999, mouseY = -9999;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    buildWaves();
+  }
+
+  /* ── 1. PARTICLES ── */
+  function Particle() {
+    this.reset = function (fresh) {
+      this.x     = fresh ? Math.random() * W : (Math.random() < .5 ? -12 : W + 12);
+      this.y     = fresh ? Math.random() * H : Math.random() * H;
+      this.vx    = (Math.random() - .5) * .5;
+      this.vy    = (Math.random() - .5) * .5;
+      this.r     = Math.random() * 2 + .4;
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      this.alpha = Math.random() * .5 + .1;
+      this.phase = Math.random() * Math.PI * 2;
+      this.pspd  = Math.random() * .022 + .007;
+      this.isStar = Math.random() < .28;
+    };
+    this.reset(true);
+
+    this.update = function () {
+      const dx = this.x - mouseX, dy = this.y - mouseY;
+      const d  = Math.hypot(dx, dy);
+      if (d < 160 && d > 0) {
+        const f = (160 - d) / 160;
+        this.vx += (dx / d) * f * .5;
+        this.vy += (dy / d) * f * .5;
+      }
+      this.vx *= .987; this.vy *= .987;
+      const spd = Math.hypot(this.vx, this.vy);
+      if (spd > 1.5) { this.vx *= 1.5/spd; this.vy *= 1.5/spd; }
+      this.x += this.vx; this.y += this.vy;
+      this.phase += this.pspd;
+      if (this.x < -25) this.x = W + 12;
+      if (this.x > W+25) this.x = -12;
+      if (this.y < -25) this.y = H + 12;
+      if (this.y > H+25) this.y = -12;
+    };
+
+    this.draw = function () {
+      const a = this.alpha * (.7 + .3 * Math.sin(this.phase));
+      ctx.globalAlpha = a;
+      ctx.fillStyle = this.color;
+      if (this.isStar && this.r > 1) {
+        // 4-point star
+        const ro = this.r * 2.4, ri = this.r * .9;
+        let ang = -Math.PI / 2;
+        const step = Math.PI / 4;
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const rr = i % 2 === 0 ? ro : ri;
+          ctx.lineTo(this.x + Math.cos(ang)*rr, this.y + Math.sin(ang)*rr);
+          ang += step;
+        }
+        ctx.closePath(); ctx.fill();
+      } else {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+  }
+
+  /* ── 2. CONSTELLATION LINES ── */
+  function drawConstellations() {
+    const MAX = 130;
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const d  = Math.hypot(dx, dy);
+        if (d < MAX) {
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.strokeStyle = particles[i].color;
+          ctx.globalAlpha = (1 - d / MAX) * .15;
+          ctx.lineWidth = .6;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+
+  /* ── 3. METEORS ── */
+  function Meteor() {
+    this.reset = function () {
+      this.x     = Math.random() * W * 1.4 - W * .2;
+      this.y     = -60;
+      this.len   = Math.random() * 160 + 70;
+      this.speed = Math.random() * 10 + 5;
+      this.angle = Math.PI * .23 + (Math.random() - .5) * .22;
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      this.w     = Math.random() * 2.2 + .8;
+      this.life  = 0;
+      this.maxL  = Math.random() * 50 + 30;
+      this.alpha = 0;
+      this.active = false;
+      this.timer  = Math.random() * 180 + 30;
+    };
+    this.reset();
+
+    this.update = function () {
+      if (!this.active) { if (--this.timer <= 0) this.active = true; return; }
+      this.x += Math.cos(this.angle) * this.speed;
+      this.y += Math.sin(this.angle) * this.speed;
+      this.life++;
+      const p = this.life / this.maxL;
+      this.alpha = p < .15 ? p / .15 : p > .75 ? (1-p)/.25 : 1;
+      if (this.life >= this.maxL || this.x > W+300 || this.y > H+300) this.reset();
+    };
+
+    this.draw = function () {
+      if (!this.active || this.alpha <= 0) return;
+      const tx = this.x - Math.cos(this.angle) * this.len;
+      const ty = this.y - Math.sin(this.angle) * this.len;
+      const g  = ctx.createLinearGradient(tx, ty, this.x, this.y);
+      g.addColorStop(0, 'transparent');
+      g.addColorStop(.5, this.color + '44');
+      g.addColorStop(1, this.color);
+      ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(this.x, this.y);
+      ctx.strokeStyle = g;
+      ctx.globalAlpha = this.alpha * .9;
+      ctx.lineWidth = this.w;
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.w * 2, 0, Math.PI*2);
+      ctx.fillStyle = this.color;
+      ctx.globalAlpha = this.alpha;
+      ctx.fill();
+    };
+  }
+
+  /* ── 4. EXPANDING RINGS ── */
+  function Ring() {
+    this.reset = function () {
+      this.x     = Math.random() * W;
+      this.y     = Math.random() * H;
+      this.r     = 0;
+      this.maxR  = Math.random() * 200 + 80;
+      this.speed = Math.random() * 1.1 + .45;
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      this.active = false;
+      this.timer  = Math.random() * 280 + 60;
+    };
+    this.reset();
+
+    this.update = function () {
+      if (!this.active) { if (--this.timer <= 0) this.active = true; return; }
+      this.r += this.speed;
+      this.alpha = Math.max(0, 1 - this.r / this.maxR);
+      if (this.r >= this.maxR) this.reset();
+    };
+
+    this.draw = function () {
+      if (!this.active || this.alpha <= 0) return;
+      ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+      ctx.strokeStyle = this.color;
+      ctx.globalAlpha = this.alpha * .22;
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      if (this.r > 25) {
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.r * .55, 0, Math.PI*2);
+        ctx.globalAlpha = this.alpha * .1;
+        ctx.lineWidth = .8;
+        ctx.stroke();
+      }
+    };
+  }
+
+  /* ── 5. CLICK BURST ── */
+  function Burst(x, y) {
+    this.pts = Array.from({length: 20}, () => {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 5 + 2;
+      return {
+        x, y, vx: Math.cos(ang)*spd, vy: Math.sin(ang)*spd,
+        r: Math.random() * 3 + 1,
+        color: COLORS[Math.floor(Math.random() * COLORS.length)],
+        life: 0, maxLife: Math.random() * 35 + 18
+      };
+    });
+    this.done = false;
+  }
+  Burst.prototype.update = function () {
+    let alive = 0;
+    this.pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      p.vx *= .91; p.vy *= .91;
+      p.life++;
+      if (p.life < p.maxLife) alive++;
+    });
+    if (!alive) this.done = true;
+  };
+  Burst.prototype.draw = function () {
+    this.pts.forEach(p => {
+      const a = Math.max(0, 1 - p.life / p.maxLife);
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r * a + .5, 0, Math.PI*2);
+      ctx.fillStyle = p.color; ctx.globalAlpha = a * .85; ctx.fill();
+    });
+  };
+
+  /* ── 6. SINE WAVES ── */
+  function buildWaves() {
+    waves = Array.from({length: 3}, () => ({
+      amp:    Math.random() * 55 + 25,
+      freq:   Math.random() * .007 + .003,
+      yBase:  Math.random() * H,
+      offset: Math.random() * Math.PI * 2,
+      speed:  (Math.random() - .5) * .011,
+      color:  COLORS[Math.floor(Math.random() * COLORS.length)],
+      alpha:  Math.random() * .1 + .04
+    }));
+  }
+
+  function drawWaves() {
+    waves.forEach(w => {
+      w.offset += w.speed;
+      ctx.beginPath();
+      for (let x = 0; x <= W; x += 4) {
+        const y = w.yBase + Math.sin(x * w.freq + w.offset + tick * .009) * w.amp;
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = w.color;
+      ctx.globalAlpha = w.alpha;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+  }
+
+  /* ── 7. TECH GRID SHIMMER ── */
+  function drawGrid() {
+    const gap = 48; // match existing bg-grid size
+    ctx.lineWidth = .35;
+    for (let x = 0; x < W; x += gap) {
+      ctx.strokeStyle = '#2563eb';
+      ctx.globalAlpha = .025 + .015 * Math.sin(tick * .007 + x * .04);
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = 0; y < H; y += gap) {
+      ctx.strokeStyle = '#06b6d4';
+      ctx.globalAlpha = .025 + .015 * Math.sin(tick * .007 + y * .04);
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+  }
+
+  /* ── INIT ── */
+  function init() {
+    resize();
+    const N = Math.min(Math.floor(W * H / 8000), 160);
+    particles = Array.from({length: N}, () => new Particle());
+    meteors   = Array.from({length: 8},  () => new Meteor());
+    rings     = Array.from({length: 6},  () => new Ring());
+  }
+
+  /* ── LOOP ── */
+  function loop() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+    tick++;
+
+    drawGrid();
+    drawWaves();
+    drawConstellations();
+    particles.forEach(p => { p.update(); p.draw(); });
+    meteors.forEach(m => { m.update(); m.draw(); });
+    rings.forEach(r => { r.update(); r.draw(); });
+    bursts = bursts.filter(b => !b.done);
+    bursts.forEach(b => { b.update(); b.draw(); });
+
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(loop);
+  }
+
+  /* ── EVENTS ── */
+  window.addEventListener('resize', resize);
+  window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
+  window.addEventListener('mouseleave', () => { mouseX = -9999; mouseY = -9999; });
+  window.addEventListener('click', e => {
+    if (e.target.closest('.nav')) return;
+    bursts.push(new Burst(e.clientX, e.clientY));
+  });
+
+  init(); loop();
+})();
+</script>
+</body></html>
